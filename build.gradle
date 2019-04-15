@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+    id 'idea'
+    id 'org.spongepowered.plugin' version '0.8.1'
+    id 'com.github.johnrengelman.shadow' version '1.2.4'
+}
+
+group 'io.github.minecraftbattleroyale'
+version '1.0.0-SNAPSHOT'
+
+defaultTasks 'assemble'
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+    maven { url 'https://repo.spongepowered.org/maven' }
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile 'net.year4000.utilities:core:master-SNAPSHOT'
+    compile 'net.year4000.utilities:sponge:master-SNAPSHOT'
+    compile 'org.spongepowered:spongeapi:7.1.0-SNAPSHOT'
+    compile 'com.google.inject:guice:4.0'
+    compile 'com.flowpowered:flow-math:1.0.3'
+}
+
+assemble.dependsOn shadowJar {
+    baseName = 'mcbr'
+    version = project.version
+
+    dependencies {
+        exclude dependency('net.year4000.utilities:.*')
+    }
+}
