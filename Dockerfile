@@ -1,9 +1,13 @@
-FROM store/oracle/serverjre:8
+FROM java:8-jre-alpine
 
 WORKDIR  /opt/minecraft
 
+RUN apk add --no-cache bash wget unzip
+
 # Copy the defaults into the root of the folder
 COPY ./docker/ .
+
+RUN chmod 755 entrypoint.sh
 
 # Download the Sponge and Minecraft jar
 ENV LAUNCH_VERSION=1.12
@@ -14,4 +18,5 @@ ADD https://repo.spongepowered.org/maven/org/spongepowered/spongevanilla/${SPONG
 ADD https://s3.amazonaws.com/Minecraft.Download/versions/${MC_VERSION}/minecraft_server.${MC_VERSION}.jar minecraft_server.${MC_VERSION}.jar
 
 EXPOSE 25565
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["java", "-jar", "spongevanilla.jar"]

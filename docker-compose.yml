@@ -9,3 +9,4 @@ services:
     volumes:
       - ./build/libs/mcbr-1.0.0-SNAPSHOT-all.jar:/opt/minecraft/mods/mcbr.jar
       - ./run/logs:/opt/minecraft/logs
+      - ./run/crash-reports:/opt/minecraft/crash-reports
