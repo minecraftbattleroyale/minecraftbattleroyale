@@ -19,4 +19,4 @@ ADD https://s3.amazonaws.com/Minecraft.Download/versions/${MC_VERSION}/minecraft
 
 EXPOSE 25565
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["java", "-jar", "spongevanilla.jar"]
+CMD ["java", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005", "-jar", "spongevanilla.jar"]
