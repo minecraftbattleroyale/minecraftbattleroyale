@@ -3,15 +3,14 @@ package io.github.minecraftbattleroyale;
 import com.flowpowered.math.vector.Vector3d;
 import io.github.minecraftbattleroyale.core.GameManager;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.type.HandTypes;
+import org.spongepowered.api.effect.particle.ParticleEffect;
+import org.spongepowered.api.effect.particle.ParticleTypes;
 import org.spongepowered.api.entity.Entity;
-import org.spongepowered.api.entity.EntityType;
 import org.spongepowered.api.entity.EntityTypes;
-import org.spongepowered.api.entity.FallingBlock;
 import org.spongepowered.api.entity.living.ArmorStand;
+import org.spongepowered.api.entity.living.player.CooldownTracker;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.entity.vehicle.Boat;
@@ -19,25 +18,28 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.entity.MoveEntityEvent;
 import org.spongepowered.api.event.entity.RideEntityEvent;
 import org.spongepowered.api.event.filter.cause.First;
+import org.spongepowered.api.event.game.state.GameLoadCompleteEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.item.inventory.InteractItemEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
+import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.item.inventory.type.CarriedInventory;
 import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.scheduler.SpongeExecutorService;
 
 import java.util.concurrent.TimeUnit;
 
 @Plugin(id = "mcbr", name = "Minecraft Battle Royale")
 public class MinecraftBattleRoyale {
   private GameManager gameManager = new GameManager();
+  private SpongeExecutorService scheduler;
 
   @Listener
-  public void onStart(GameStartedServerEvent event) {
-    System.out.println(event);
-
+  public void onStart(GameLoadCompleteEvent event) {
+    scheduler = Sponge.getScheduler().createSyncExecutor(this);
   }
 
   @Listener
@@ -59,22 +61,48 @@ public class MinecraftBattleRoyale {
 
   @Listener
   public void onRightClick(InteractItemEvent event, @First Player player) {
-    ItemStackSnapshot item = event.getItemStack();
+    ItemType item = event.getItemStack().getType();
+    //event.getItemStack()
     System.out.println(item);
     // Use iron axe right now
-    boolean pistol = item.getType().matches(ItemStack.of(ItemTypes.IRON_AXE));
-    boolean sniper = item.getType().matches(ItemStack.of(ItemTypes.IRON_PICKAXE));
-    if (pistol || sniper) {
-      Vector3d positon = player.getPosition();
+    CooldownTracker cooldownTracker = player.getCooldownTracker();
+    boolean pistol = item.matches(ItemStack.of(ItemTypes.IRON_AXE));
+    boolean sniper = item.matches(ItemStack.of(ItemTypes.IRON_PICKAXE));
+    if ((pistol || sniper) && !cooldownTracker.hasCooldown(item)) {
+      int quantity = event.getItemStack().getQuantity();
+      Vector3d position = player.getPosition().add(0, 1.5, 0);
       double yaw = Math.toRadians(player.getHeadRotation().getY() + 90);
       double pitch = Math.toRadians(player.getHeadRotation().getX() + 90);
-      double x = 1.25 * Math.cos(yaw);
-      double y = 1.25 * Math.sin(yaw);
-      Entity arrow = player.getWorld().createEntity(EntityTypes.TIPPED_ARROW, positon.add(x, 1.62, y));
-      System.out.println(arrow);
+      Vector3d velocity = new Vector3d(Math.cos(yaw), Math.cos(pitch), Math.sin(yaw)).mul(5);
+      position = position.add(velocity.normalize().mul(1.5));
+      Entity arrow = player.getWorld().createEntity(EntityTypes.TIPPED_ARROW, position);
       player.getWorld().spawnEntity(arrow);
-      Vector3d velocity = new Vector3d(x, Math.cos(pitch), y).mul(5);
+      arrow.setCreator(player.getUniqueId());
       arrow.setVelocity(velocity);
+      for (int i = 0 ; i < 10 ; i++) {
+        position = position.add(velocity.normalize());
+        player.getWorld().spawnParticles(ParticleEffect.builder().type(ParticleTypes.SNOWBALL).build(), position);
+      }
+      // if at one, reload gun
+      if (quantity == 1) {
+        cooldownTracker.setCooldown(item, 50);
+        player.getItemInHand(HandTypes.MAIN_HAND).ifPresent(itemStack -> {
+          int maxStackSize = itemStack.get(Keys.ITEM_DURABILITY).get();
+          itemStack.offer(Keys.ITEM_DURABILITY, 1);
+          long startTime = System.currentTimeMillis();
+          SpongeExecutorService.SpongeFuture future = scheduler.scheduleAtFixedRate(() -> {
+            itemStack.offer(Keys.ITEM_DURABILITY, (int) (maxStackSize * ((double) System.currentTimeMillis() - startTime) / 2500));
+          }, 0, 5, TimeUnit.MILLISECONDS);
+          scheduler.schedule(() -> {
+            future.cancel(true);
+            itemStack.offer(Keys.ITEM_DURABILITY, maxStackSize);
+            itemStack.setQuantity(3);
+          }, 2500, TimeUnit.MILLISECONDS);
+        });
+      } else {
+        player.getItemInHand(HandTypes.MAIN_HAND).ifPresent(itemStack -> itemStack.setQuantity(quantity - 1));
+        cooldownTracker.setCooldown(item, 5);
+      }
     }
   }
 
