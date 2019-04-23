@@ -13,6 +13,7 @@ import org.spongepowered.api.entity.living.ArmorStand;
 import org.spongepowered.api.entity.living.player.CooldownTracker;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
+import org.spongepowered.api.entity.projectile.arrow.TippedArrow;
 import org.spongepowered.api.entity.vehicle.Boat;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.entity.MoveEntityEvent;
@@ -28,8 +29,14 @@ import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.item.inventory.type.CarriedInventory;
 import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.resourcepack.ResourcePack;
+import org.spongepowered.api.resourcepack.ResourcePacks;
 import org.spongepowered.api.scheduler.SpongeExecutorService;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
 @Plugin(id = "mcbr", name = "Minecraft Battle Royale")
@@ -43,8 +50,9 @@ public class MinecraftBattleRoyale {
   }
 
   @Listener
-  public void onJoin(ClientConnectionEvent.Join event) {
+  public void onJoin(ClientConnectionEvent.Join event) throws MalformedURLException, URISyntaxException {
     Player player = event.getTargetEntity();
+    player.sendResourcePack(ResourcePacks.fromUriUnchecked(new URL(Sponge.getServer().getDefaultResourcePack().get().getUri().toString() + "?z=" + System.currentTimeMillis()).toURI()));
     player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
     player.offer(Keys.CAN_FLY, true);
     player.offer(Keys.HEALTH, 20.0);
@@ -54,6 +62,7 @@ public class MinecraftBattleRoyale {
     inventory.clear();
     inventory.offer(ItemStack.of(ItemTypes.IRON_PICKAXE, 1));
     inventory.offer(ItemStack.of(ItemTypes.IRON_AXE, 1));
+    inventory.offer(ItemStack.of(ItemTypes.BLAZE_ROD, 1));
     ItemStack map = ItemStack.of(ItemTypes.FILLED_MAP, 1);
     player.setItemInHand(HandTypes.OFF_HAND, map);
     player.setChestplate(ItemStack.of(ItemTypes.ELYTRA, 1));
@@ -96,7 +105,7 @@ public class MinecraftBattleRoyale {
           scheduler.schedule(() -> {
             future.cancel(true);
             itemStack.offer(Keys.ITEM_DURABILITY, maxStackSize);
-            itemStack.setQuantity(3);
+            itemStack.setQuantity(125);
           }, 2500, TimeUnit.MILLISECONDS);
         });
       } else {
@@ -110,9 +119,11 @@ public class MinecraftBattleRoyale {
   @Listener
   public void onAirShip(InteractItemEvent event, @First Player player) {
     ItemStackSnapshot item = event.getItemStack();
-    System.out.println(item);
     boolean pistol = item.getType().matches(ItemStack.of(ItemTypes.BLAZE_ROD));
     if (pistol) {
+      player.setLocation(player.getLocation().add(0, 150 - player.getLocation().getY(), 0));
+      double yaw = Math.toRadians(player.getHeadRotation().getY() + 90);
+      Vector3d looking = new Vector3d(Math.cos(yaw), 0,  Math.sin(yaw));
       ArmorStand armorStand = (ArmorStand) player.getWorld().createEntity(EntityTypes.ARMOR_STAND, player.getPosition());
       player.getWorld().spawnEntity(armorStand);
       Boat boat = (Boat) player.getWorld().createEntity(EntityTypes.BOAT, player.getPosition());
@@ -123,38 +134,51 @@ public class MinecraftBattleRoyale {
       armorStandP.setHelmet(ItemStack.builder().itemType(ItemTypes.HAY_BLOCK).build());
       armorStandP.offer(Keys.INVISIBLE, true);
       armorStand.offer(Keys.INVISIBLE, true);
-      //armorStand.offer(Keys.HAS_GRAVITY, false);
       armorStand.addPassenger(boat);
       boat.addPassenger(player);
       boat.addPassenger(armorStandP);
-      double yaw = Math.toRadians(player.getHeadRotation().getY() + 90);
-      double x = 1.25 * Math.cos(yaw);
-      double y = 1.25 * Math.sin(yaw);
-      Sponge.getScheduler().createSyncExecutor(this).scheduleAtFixedRate(() -> {
-        armorStand.setVelocity(new Vector3d(x, 0, y));
-
+      scheduler.scheduleAtFixedRate(() -> {
+        armorStand.setVelocity(looking);
       }, 0, 125, TimeUnit.MILLISECONDS);
-      //armorStand.setVelocity(new Vector3d(x, 0, y).mul(20));
     }
   }
 
   @Listener
   public void onEject(RideEntityEvent.Dismount event, @First Player player) {
-    player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
-    player.offer(Keys.CAN_FLY, false);
-    player.offer(Keys.HEALTH, 40.0);
-    player.offer(Keys.IS_ELYTRA_FLYING, true);
+   // event.setCancelled(true);
     CarriedInventory inventory = player.getInventory();
     inventory.clear();
     player.setChestplate(ItemStack.of(ItemTypes.ELYTRA, 1));
+    scheduler.schedule(() -> {
+      //event.getTargetEntity().removePassenger(player);
+      player.setLocation(player.getLocation().add(0, -2, 0));
+      player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
+      player.offer(Keys.IS_ELYTRA_FLYING, true);
+      player.offer(Keys.FLYING_SPEED, 0.1);
+      CarriedInventory inventoryA = player.getInventory();
+      inventoryA.clear();
+      player.setChestplate(ItemStack.of(ItemTypes.ELYTRA, 1));
+    }, 250, TimeUnit.MILLISECONDS);
   }
 
   @Listener
   public void onEject(MoveEntityEvent event, @First Player player) {
     // after lobby game state
-//    if (!player.get(Keys.IS_ELYTRA_FLYING).get()) {
-//
-//    }
-
+    if (player.get(Keys.IS_ELYTRA_FLYING).get()) {
+      player.spawnParticles(ParticleEffect.builder().type(ParticleTypes.SNOWBALL).build(), player.getPosition());
+      double maxFlightVelocity = -0.45;
+      if (player.getVelocity().getX() < maxFlightVelocity) {
+        player.setVelocity(new Vector3d(maxFlightVelocity, player.getVelocity().getY(), player.getVelocity().getZ()));
+      }
+      if (player.getVelocity().getY() < maxFlightVelocity) {
+        player.setVelocity(new Vector3d(player.getVelocity().getX(), maxFlightVelocity, player.getVelocity().getZ()));
+      }
+      if (player.getVelocity().getZ() < maxFlightVelocity) {
+        player.setVelocity(new Vector3d(player.getVelocity().getX(), player.getVelocity().getY(), maxFlightVelocity));
+      }
+    } else {
+      player.setChestplate(null);
+      // todo switch player to playing mode
+    }
   }
 }
