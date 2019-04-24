@@ -1,7 +1,11 @@
 package io.github.minecraftbattleroyale;
 
 import com.flowpowered.math.vector.Vector3d;
-import io.github.minecraftbattleroyale.core.GameManager;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import io.github.minecraftbattleroyale.commands.StartCommand;
+import io.github.minecraftbattleroyale.core.ArenaGame;
+import org.spongepowered.api.Game;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.type.HandTypes;
@@ -15,6 +19,7 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.entity.projectile.arrow.TippedArrow;
 import org.spongepowered.api.entity.vehicle.Boat;
+import org.spongepowered.api.event.EventManager;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.entity.MoveEntityEvent;
 import org.spongepowered.api.event.entity.RideEntityEvent;
@@ -29,43 +34,41 @@ import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.item.inventory.type.CarriedInventory;
 import org.spongepowered.api.plugin.Plugin;
-import org.spongepowered.api.resourcepack.ResourcePack;
 import org.spongepowered.api.resourcepack.ResourcePacks;
 import org.spongepowered.api.scheduler.SpongeExecutorService;
 
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
 @Plugin(id = "mcbr", name = "Minecraft Battle Royale")
 public class MinecraftBattleRoyale {
-  private GameManager gameManager = new GameManager();
+  @Inject
+  private Injector injector;
+  @Inject
+  private EventManager eventManager;
+  @Inject
+  private Game game;
   private SpongeExecutorService scheduler;
+  private ArenaGame arenaGame = new ArenaGame();
 
+  /** This will get the current game */
+  public ArenaGame getCurrentGame() {
+    return arenaGame;
+  }
+
+  /** Handle logic that register's stuff */
   @Listener
   public void onStart(GameLoadCompleteEvent event) {
     scheduler = Sponge.getScheduler().createSyncExecutor(this);
+    StartCommand.register(this);
+    getCurrentGame().setWorld(Sponge.getServer().getWorld(Sponge.getServer().getDefaultWorldName()).get());
   }
 
   @Listener
-  public void onJoin(ClientConnectionEvent.Join event) throws MalformedURLException, URISyntaxException {
-    Player player = event.getTargetEntity();
-    player.sendResourcePack(ResourcePacks.fromUriUnchecked(new URL(Sponge.getServer().getDefaultResourcePack().get().getUri().toString() + "?z=" + System.currentTimeMillis()).toURI()));
-    player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
-    player.offer(Keys.CAN_FLY, true);
-    player.offer(Keys.HEALTH, 20.0);
-    player.offer(Keys.SATURATION, 20.0);
-    player.offer(Keys.FOOD_LEVEL, 20);
-    CarriedInventory inventory = player.getInventory();
-    inventory.clear();
-    inventory.offer(ItemStack.of(ItemTypes.IRON_PICKAXE, 1));
-    inventory.offer(ItemStack.of(ItemTypes.IRON_AXE, 1));
-    inventory.offer(ItemStack.of(ItemTypes.BLAZE_ROD, 1));
-    ItemStack map = ItemStack.of(ItemTypes.FILLED_MAP, 1);
-    player.setItemInHand(HandTypes.OFF_HAND, map);
-    player.setChestplate(ItemStack.of(ItemTypes.ELYTRA, 1));
+  public void onJoin(ClientConnectionEvent.Join event) {
+    getCurrentGame().joinGame(event.getTargetEntity());
   }
 
   @Listener
@@ -112,34 +115,6 @@ public class MinecraftBattleRoyale {
         player.getItemInHand(HandTypes.MAIN_HAND).ifPresent(itemStack -> itemStack.setQuantity(quantity - 1));
         cooldownTracker.setCooldown(item, 5);
       }
-    }
-  }
-
-
-  @Listener
-  public void onAirShip(InteractItemEvent event, @First Player player) {
-    ItemStackSnapshot item = event.getItemStack();
-    boolean pistol = item.getType().matches(ItemStack.of(ItemTypes.BLAZE_ROD));
-    if (pistol) {
-      player.setLocation(player.getLocation().add(0, 150 - player.getLocation().getY(), 0));
-      double yaw = Math.toRadians(player.getHeadRotation().getY() + 90);
-      Vector3d looking = new Vector3d(Math.cos(yaw), 0,  Math.sin(yaw));
-      ArmorStand armorStand = (ArmorStand) player.getWorld().createEntity(EntityTypes.ARMOR_STAND, player.getPosition());
-      player.getWorld().spawnEntity(armorStand);
-      Boat boat = (Boat) player.getWorld().createEntity(EntityTypes.BOAT, player.getPosition());
-      boat.offer(Keys.INVISIBLE, true);
-      player.getWorld().spawnEntity(boat);
-      ArmorStand armorStandP = (ArmorStand) player.getWorld().createEntity(EntityTypes.ARMOR_STAND, player.getPosition());
-      player.getWorld().spawnEntity(armorStandP);
-      armorStandP.setHelmet(ItemStack.builder().itemType(ItemTypes.HAY_BLOCK).build());
-      armorStandP.offer(Keys.INVISIBLE, true);
-      armorStand.offer(Keys.INVISIBLE, true);
-      armorStand.addPassenger(boat);
-      boat.addPassenger(player);
-      boat.addPassenger(armorStandP);
-      scheduler.scheduleAtFixedRate(() -> {
-        armorStand.setVelocity(looking);
-      }, 0, 125, TimeUnit.MILLISECONDS);
     }
   }
 
