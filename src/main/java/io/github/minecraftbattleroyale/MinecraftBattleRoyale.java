@@ -1,6 +1,7 @@
 package io.github.minecraftbattleroyale;
 
 import com.flowpowered.math.vector.Vector3d;
+import com.flowpowered.noise.module.combiner.Min;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import io.github.minecraftbattleroyale.commands.StartCommand;
@@ -42,8 +43,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
-@Plugin(id = "mcbr", name = "Minecraft Battle Royale")
+@Plugin(id = MinecraftBattleRoyale.ID, name = "Minecraft Battle Royale")
 public class MinecraftBattleRoyale {
+  public static final String ID = "mcbr";
   @Inject
   private Injector injector;
   @Inject
@@ -53,9 +55,18 @@ public class MinecraftBattleRoyale {
   private SpongeExecutorService scheduler;
   private ArenaGame arenaGame = new ArenaGame();
 
+  /** Get the instance of the plugin */
+  public static MinecraftBattleRoyale get() {
+    return (MinecraftBattleRoyale) Sponge.getPluginManager().getPlugin(MinecraftBattleRoyale.ID).get().getInstance().get();
+  }
+
   /** This will get the current game */
   public ArenaGame getCurrentGame() {
-    return arenaGame;
+    return this.arenaGame;
+  }
+
+  public SpongeExecutorService syncScheduler() {
+    return this.scheduler;
   }
 
   /** Handle logic that register's stuff */
@@ -64,13 +75,12 @@ public class MinecraftBattleRoyale {
     scheduler = Sponge.getScheduler().createSyncExecutor(this);
     StartCommand.register(this);
     getCurrentGame().setWorld(Sponge.getServer().getWorld(Sponge.getServer().getDefaultWorldName()).get());
+    getCurrentGame().setScheduler(scheduler);
+    Sponge.getEventManager().registerListeners(this, arenaGame);
   }
 
-  @Listener
-  public void onJoin(ClientConnectionEvent.Join event) {
-    getCurrentGame().joinGame(event.getTargetEntity());
-  }
 
+  // The code that makes the guns shoot, must register an gun registry
   @Listener
   public void onRightClick(InteractItemEvent event, @First Player player) {
     ItemType item = event.getItemStack().getType();
@@ -115,45 +125,6 @@ public class MinecraftBattleRoyale {
         player.getItemInHand(HandTypes.MAIN_HAND).ifPresent(itemStack -> itemStack.setQuantity(quantity - 1));
         cooldownTracker.setCooldown(item, 5);
       }
-    }
-  }
-
-  @Listener
-  public void onEject(RideEntityEvent.Dismount event, @First Player player) {
-   // event.setCancelled(true);
-    CarriedInventory inventory = player.getInventory();
-    inventory.clear();
-    player.setChestplate(ItemStack.of(ItemTypes.ELYTRA, 1));
-    scheduler.schedule(() -> {
-      //event.getTargetEntity().removePassenger(player);
-      player.setLocation(player.getLocation().add(0, -2, 0));
-      player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
-      player.offer(Keys.IS_ELYTRA_FLYING, true);
-      player.offer(Keys.FLYING_SPEED, 0.1);
-      CarriedInventory inventoryA = player.getInventory();
-      inventoryA.clear();
-      player.setChestplate(ItemStack.of(ItemTypes.ELYTRA, 1));
-    }, 250, TimeUnit.MILLISECONDS);
-  }
-
-  @Listener
-  public void onEject(MoveEntityEvent event, @First Player player) {
-    // after lobby game state
-    if (player.get(Keys.IS_ELYTRA_FLYING).get()) {
-      player.spawnParticles(ParticleEffect.builder().type(ParticleTypes.SNOWBALL).build(), player.getPosition());
-      double maxFlightVelocity = -0.45;
-      if (player.getVelocity().getX() < maxFlightVelocity) {
-        player.setVelocity(new Vector3d(maxFlightVelocity, player.getVelocity().getY(), player.getVelocity().getZ()));
-      }
-      if (player.getVelocity().getY() < maxFlightVelocity) {
-        player.setVelocity(new Vector3d(player.getVelocity().getX(), maxFlightVelocity, player.getVelocity().getZ()));
-      }
-      if (player.getVelocity().getZ() < maxFlightVelocity) {
-        player.setVelocity(new Vector3d(player.getVelocity().getX(), player.getVelocity().getY(), maxFlightVelocity));
-      }
-    } else {
-      player.setChestplate(null);
-      // todo switch player to playing mode
     }
   }
 }

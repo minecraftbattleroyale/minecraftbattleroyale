@@ -1,16 +1,12 @@
 package io.github.minecraftbattleroyale.core;
 
-import com.flowpowered.math.vector.Vector3d;
 import net.year4000.utilities.Conditions;
 import net.year4000.utilities.sponge.Messages;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.type.HandTypes;
-import org.spongepowered.api.entity.EntityTypes;
-import org.spongepowered.api.entity.living.ArmorStand;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
-import org.spongepowered.api.entity.vehicle.Boat;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.type.CarriedInventory;
@@ -21,7 +17,6 @@ import org.spongepowered.api.text.format.TextColors;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.concurrent.TimeUnit;
 
 public class UserPlayer {
   private ArenaGame game;
@@ -62,12 +57,10 @@ public class UserPlayer {
     player.setChestplate(ItemStack.of(ItemTypes.ELYTRA, 1));
   }
 
-  public void airShip() {
-
-  }
 
   public void startGame() {
-
+    mode = UserPlayerMode.START_GAME;
+    player.sendMessage(Text.of(TextColors.AQUA, "AIR SHIP MODE"));
   }
 
   /** Get the internal player */

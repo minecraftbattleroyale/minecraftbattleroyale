@@ -1,5 +1,6 @@
 package io.github.minecraftbattleroyale.commands;
 
+import io.github.minecraftbattleroyale.MinecraftBattleRoyale;
 import net.year4000.utilities.sponge.Messages;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -32,8 +33,10 @@ public class StartCommand implements CommandExecutor {
       throw new CommandException(Text.of(Messages.ERROR, RED, CMD_ERROR_PLAYER.get(src)));
     }
 
+    final MinecraftBattleRoyale plugin = MinecraftBattleRoyale.get();
     final Player player = (Player) src;
-
+    player.sendMessage(Text.of(RED, "Starting the game"));
+    plugin.getCurrentGame().startGame();
 
     return CommandResult.builder().build();
   }
