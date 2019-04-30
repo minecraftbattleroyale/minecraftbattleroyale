@@ -29,6 +29,7 @@ import org.spongepowered.api.event.game.state.GameLoadCompleteEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.item.inventory.InteractItemEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
+import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
@@ -37,6 +38,8 @@ import org.spongepowered.api.item.inventory.type.CarriedInventory;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.resourcepack.ResourcePacks;
 import org.spongepowered.api.scheduler.SpongeExecutorService;
+import org.spongepowered.api.world.DimensionTypes;
+import org.spongepowered.api.world.World;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -74,11 +77,19 @@ public class MinecraftBattleRoyale {
   public void onStart(GameLoadCompleteEvent event) {
     scheduler = Sponge.getScheduler().createSyncExecutor(this);
     StartCommand.register(this);
-    getCurrentGame().setWorld(Sponge.getServer().getWorld(Sponge.getServer().getDefaultWorldName()).get());
-    getCurrentGame().setScheduler(scheduler);
     Sponge.getEventManager().registerListeners(this, arenaGame);
+    getCurrentGame().setScheduler(scheduler);
   }
 
+  /** Set the world for the game when it loads */
+  @Listener
+  public void onWorldLoad(LoadWorldEvent event) {
+    // todo better checks but just use the overworld right now
+    World world = event.getTargetWorld();
+    if (world.getDimension().getType().equals(DimensionTypes.OVERWORLD)) {
+      getCurrentGame().setWorld(world);
+    }
+  }
 
   // The code that makes the guns shoot, must register an gun registry
   @Listener

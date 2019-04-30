@@ -44,18 +44,18 @@ public class ArenaGame {
   /** Have the player join the game, have them then join the lobby */
   public void joinGame(Player player) {
     UserPlayer userPlayer = new UserPlayer(this, player);
-    Sponge.getEventManager().registerListeners(this, userPlayer);
+    Sponge.getEventManager().registerListeners(MinecraftBattleRoyale.get(), userPlayer);
     players.add(userPlayer);
-    player.setLocation(LOBBY_SPAWN, world.getUniqueId());
+    player.setLocationSafely(new Location<>(world, LOBBY_SPAWN));
     userPlayer.joinLobby();
   }
 
   /** Start the game, starts with the air ships*/
   public void startGame() {
-    if (gameMode != GameMode.LOBBY) {
-      System.out.println("cant start the game now");
-      return;
-    }
+//    if (gameMode != GameMode.LOBBY) {
+//      System.out.println("cant start the game now");
+//      return;
+//    }
     gameMode = GameMode.RUNNING;
     players.forEach(userPlayer -> {
       Airship airship = new Airship(AIRSHIP_STOP);

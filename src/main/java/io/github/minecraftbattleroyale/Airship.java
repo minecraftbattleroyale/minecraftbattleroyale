@@ -36,6 +36,7 @@ public class Airship implements Runnable {
   private Vector3d stopLocation;
   private SpongeExecutorService scheduler;
   private Player player;
+  private SpongeExecutorService.SpongeFuture future;
 
   public Airship(Vector3d stopLocation) {
     this.stopLocation = stopLocation;
@@ -67,19 +68,25 @@ public class Airship implements Runnable {
     Player player = userPlayer.getPlayer();
     shipRider.addPassenger(player);
     this.player = player;
+    future = scheduler.scheduleAtFixedRate(this, 0,125, TimeUnit.MILLISECONDS);
   }
+
+
 
   /** Remove the airship */
   public void cleanUp() {
+    System.out.println("Cleaning up the air ship");
     // player is still on board
     if (shipRider.getPassengers().size() > 1) {
       eject(player);
     }
     Sponge.getEventManager().unregisterListeners(this);
     entites().forEach(Entity::remove);
+    future.cancel(false);
   }
 
   public Runnable eject(Player player) {
+    System.out.println("Ejecting the player from the air ship");
     return () -> {
       player.setLocation(player.getLocation().add(0, -2, 0));
       player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
@@ -97,6 +104,7 @@ public class Airship implements Runnable {
     Vector3d looking = new Vector3d(Math.cos(YAW), 0,  Math.sin(YAW));
     engine.setVelocity(looking);
     if (engine.getLocation().getPosition().distance(stopLocation) < 5) {
+      System.out.println("Near the stop location running clean up");
       cleanUp();
     }
   }
