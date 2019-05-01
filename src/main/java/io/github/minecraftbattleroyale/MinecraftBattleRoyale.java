@@ -1,7 +1,6 @@
 package io.github.minecraftbattleroyale;
 
 import com.flowpowered.math.vector.Vector3d;
-import com.flowpowered.noise.module.combiner.Min;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import io.github.minecraftbattleroyale.commands.StartCommand;
@@ -14,36 +13,30 @@ import org.spongepowered.api.effect.particle.ParticleEffect;
 import org.spongepowered.api.effect.particle.ParticleTypes;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
-import org.spongepowered.api.entity.living.ArmorStand;
 import org.spongepowered.api.entity.living.player.CooldownTracker;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.entity.living.player.gamemode.GameModes;
-import org.spongepowered.api.entity.projectile.arrow.TippedArrow;
-import org.spongepowered.api.entity.vehicle.Boat;
 import org.spongepowered.api.event.EventManager;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.entity.MoveEntityEvent;
-import org.spongepowered.api.event.entity.RideEntityEvent;
+import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
+import org.spongepowered.api.event.entity.DamageEntityEvent;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.game.state.GameLoadCompleteEvent;
-import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.item.inventory.InteractItemEvent;
-import org.spongepowered.api.event.network.ClientConnectionEvent;
 import org.spongepowered.api.event.world.LoadWorldEvent;
+import org.spongepowered.api.event.world.chunk.UnloadChunkEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
-import org.spongepowered.api.item.inventory.ItemStackSnapshot;
-import org.spongepowered.api.item.inventory.type.CarriedInventory;
 import org.spongepowered.api.plugin.Plugin;
-import org.spongepowered.api.resourcepack.ResourcePacks;
 import org.spongepowered.api.scheduler.SpongeExecutorService;
+import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.gamerule.DefaultGameRules;
+import org.spongepowered.api.world.storage.WorldProperties;
 
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Plugin(id = MinecraftBattleRoyale.ID, name = "Minecraft Battle Royale")
@@ -57,6 +50,10 @@ public class MinecraftBattleRoyale {
   private Game game;
   private SpongeExecutorService scheduler;
   private ArenaGame arenaGame = new ArenaGame();
+  private final Map<ItemType, Gun> guns = new HashMap<>();
+  {
+    // todo create the map of the guns
+  }
 
   /** Get the instance of the plugin */
   public static MinecraftBattleRoyale get() {
@@ -85,10 +82,33 @@ public class MinecraftBattleRoyale {
   @Listener
   public void onWorldLoad(LoadWorldEvent event) {
     // todo better checks but just use the overworld right now
-    World world = event.getTargetWorld();
+    final World world = event.getTargetWorld();
     if (world.getDimension().getType().equals(DimensionTypes.OVERWORLD)) {
+      WorldProperties properties = world.getProperties();
+      properties.setWorldTime(4283);
+      properties.setGameRule(DefaultGameRules.DO_DAYLIGHT_CYCLE, "false");
+      properties.setGameRule(DefaultGameRules.DO_MOB_SPAWNING, "false");
+      properties.setGameRule(DefaultGameRules.DO_WEATHER_CYCLE, "false");
+      properties.setGameRule(DefaultGameRules.SPAWN_RADIUS, "1");
+      properties.setSpawnPosition(ArenaGame.LOBBY_SPAWN.toInt());
       getCurrentGame().setWorld(world);
+      int chunksRadius = 45;
+      for (int i = 0 ; i < chunksRadius ; i++) {
+        for (int j = 0 ; j < chunksRadius ; j++) {
+          Chunk chunk = world.getChunk(i, 0, j).orElse(null);
+          if (chunk != null) {
+            System.out.println("Loading chunk: " + chunk);
+            chunk.loadChunk(false);
+          }
+        }
+      }
     }
+  }
+
+  /** Set the world for the game when it loads */
+  @Listener
+  public void onWorldLoad(UnloadChunkEvent event) {
+    event.getTargetChunk().loadChunk(false);
   }
 
   // The code that makes the guns shoot, must register an gun registry
@@ -101,7 +121,8 @@ public class MinecraftBattleRoyale {
     CooldownTracker cooldownTracker = player.getCooldownTracker();
     boolean pistol = item.matches(ItemStack.of(ItemTypes.IRON_AXE));
     boolean sniper = item.matches(ItemStack.of(ItemTypes.IRON_PICKAXE));
-    if ((pistol || sniper) && !cooldownTracker.hasCooldown(item)) {
+    boolean shotgun = item.matches(ItemStack.of(ItemTypes.STONE_SWORD));
+    if ((pistol || sniper || shotgun) && !cooldownTracker.hasCooldown(item)) {
       int quantity = event.getItemStack().getQuantity();
       Vector3d position = player.getPosition().add(0, 1.5, 0);
       double yaw = Math.toRadians(player.getHeadRotation().getY() + 90);
@@ -129,7 +150,7 @@ public class MinecraftBattleRoyale {
           scheduler.schedule(() -> {
             future.cancel(true);
             itemStack.offer(Keys.ITEM_DURABILITY, maxStackSize);
-            itemStack.setQuantity(125);
+            itemStack.setQuantity(28);
           }, 2500, TimeUnit.MILLISECONDS);
         });
       } else {

@@ -16,20 +16,19 @@ import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.WorldBorder;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class ArenaGame {
-  private static final Vector3d LOBBY_SPAWN = new Vector3d(181, 60, 448);
-  private static final Vector3d COLLAPSE_CENTER = new Vector3d(181, 0, 448);
-  private static final int COLLAPSE_DIAMETER = 123;
-  private static final Vector3d AIRSHIP_START = new Vector3d(181, 60, 448);
-  private static final Vector3d AIRSHIP_STOP = new Vector3d(181, 60, 448);
-  private static final int COLLAPSE_START = 60;
+  public static final Vector3d LOBBY_SPAWN = new Vector3d(181, 60, 448);
+  public static final Vector3d COLLAPSE_CENTER = new Vector3d(75, 0, 40);
+  public static final int COLLAPSE_DIAMETER = 64;
+  public static final Vector3d AIRSHIP_START = new Vector3d(300, 150, 305);
+  public static final Vector3d AIRSHIP_STOP = new Vector3d(-160, 150, -177);
+  public static final int COLLAPSE_START = 60;
   private GameMode gameMode = GameMode.LOBBY;
   private World world;
-  private Set<UserPlayer> players = new HashSet<>();
+  private List<UserPlayer> players = new ArrayList<>();
   private SpongeExecutorService scheduler;
 
   /** Set the world for this player should be done asap */
@@ -50,6 +49,23 @@ public class ArenaGame {
     userPlayer.joinLobby();
   }
 
+  /** Get the player from the array list O(n) bad */
+  public UserPlayer getPlayer(Player player) {
+    for (UserPlayer userPlayer : players) {
+      if (userPlayer.getPlayer().getUniqueId().equals(player.getUniqueId())) {
+        return userPlayer;
+      }
+    }
+    return null;
+  }
+
+  /** Have the player join the game, have them then join the lobby */
+  public void leaveGame(Player player) {
+    UserPlayer userPlayer = getPlayer(player);
+    players.remove(userPlayer);
+    Sponge.getEventManager().unregisterListeners(userPlayer);
+  }
+
   /** Start the game, starts with the air ships*/
   public void startGame() {
 //    if (gameMode != GameMode.LOBBY) {
@@ -57,10 +73,14 @@ public class ArenaGame {
 //      return;
 //    }
     gameMode = GameMode.RUNNING;
+    Random rand = new Random();
     players.forEach(userPlayer -> {
+      Location<World> start = new Location<>(userPlayer.getPlayer().getWorld(), AIRSHIP_START.add(rand.nextInt(10), 0, rand.nextInt(10)));
+      userPlayer.getPlayer().setLocation(start);
       Airship airship = new Airship(AIRSHIP_STOP);
-      airship.spawnShip(new Location<>(userPlayer.getPlayer().getWorld(), AIRSHIP_START));
+      airship.spawnShip(start);
       airship.ride(userPlayer);
+      Sponge.getEventManager().registerListeners(MinecraftBattleRoyale.get(), airship);
       userPlayer.startGame();
       userPlayer.getPlayer().sendMessage(Text.of(TextColors.GREEN, "Circle is collapsing in " + COLLAPSE_START + "..."));
     });
@@ -83,6 +103,11 @@ public class ArenaGame {
   @Listener
   public void onJoin(ClientConnectionEvent.Join event) {
     joinGame(event.getTargetEntity());
+  }
+
+  @Listener
+  public void onJoin(ClientConnectionEvent.Disconnect event) {
+    leaveGame(event.getTargetEntity());
   }
 }
 

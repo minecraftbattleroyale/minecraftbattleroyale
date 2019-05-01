@@ -41,7 +41,7 @@ public class UserPlayer {
 
   /** This will start the player in lobby mode */
   public void joinLobby() {
-    sendResourcePack();
+    //sendResourcePack();
     player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
     player.offer(Keys.CAN_FLY, true);
     player.offer(Keys.HEALTH, 20.0);
@@ -51,12 +51,28 @@ public class UserPlayer {
     inventory.clear();
     inventory.offer(ItemStack.of(ItemTypes.IRON_PICKAXE, 1));
     inventory.offer(ItemStack.of(ItemTypes.IRON_AXE, 1));
-    inventory.offer(ItemStack.of(ItemTypes.BLAZE_ROD, 1));
+    //inventory.offer(ItemStack.of(ItemTypes.BLAZE_ROD, 1));
+    inventory.offer(ItemStack.of(ItemTypes.STONE_SWORD, 1));
+    inventory.offer(ItemStack.of(ItemTypes.FEATHER, 16));
+    inventory.offer(ItemStack.of(ItemTypes.FLINT_AND_STEEL, 1));
     ItemStack map = ItemStack.of(ItemTypes.FILLED_MAP, 1);
     player.setItemInHand(HandTypes.OFF_HAND, map);
     player.setChestplate(ItemStack.of(ItemTypes.ELYTRA, 1));
   }
 
+  public void startFighting() {
+    if (mode == UserPlayerMode.START_GAME) {
+      mode = UserPlayerMode.IN_GAME;
+      CarriedInventory inventory = player.getInventory();
+      inventory.clear();
+      inventory.offer(ItemStack.of(ItemTypes.IRON_PICKAXE, 1));
+      inventory.offer(ItemStack.of(ItemTypes.IRON_AXE, 1));
+      inventory.offer(ItemStack.of(ItemTypes.STONE_SWORD, 1));
+      inventory.offer(ItemStack.of(ItemTypes.FEATHER, 16));
+      ItemStack map = ItemStack.of(ItemTypes.FILLED_MAP, 1);
+      player.setItemInHand(HandTypes.OFF_HAND, map);
+    }
+  }
 
   public void startGame() {
     mode = UserPlayerMode.START_GAME;
@@ -70,6 +86,17 @@ public class UserPlayer {
 
   /** This is the hash code for the userplayer it will match the entity player */
   public int hashCode() {
-    return player.hashCode();
+    return player.getUniqueId().hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof Player) {
+      return this.player.getUniqueId().equals(((Player) obj).getUniqueId());
+    }
+    if (obj instanceof UserPlayer) {
+      return this.player.getUniqueId().equals(((UserPlayer) obj).player.getUniqueId());
+    }
+    return false;
   }
 }

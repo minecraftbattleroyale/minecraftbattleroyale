@@ -29,14 +29,15 @@ import java.util.concurrent.TimeUnit;
 
 /** This is the air ship that will fly across the sky */
 public class Airship implements Runnable {
-  private static final double YAW = 90;
   private ArmorStand engine;
   private ArmorStand shipHolder;
   private Boat shipRider;
   private Vector3d stopLocation;
   private SpongeExecutorService scheduler;
-  private Player player;
+  private UserPlayer player;
   private SpongeExecutorService.SpongeFuture future;
+  private long started = System.currentTimeMillis();
+  private long maxTime = started + (60 * 1000);
 
   public Airship(Vector3d stopLocation) {
     this.stopLocation = stopLocation;
@@ -48,6 +49,7 @@ public class Airship implements Runnable {
     engine = (ArmorStand) worldLocation.createEntity(EntityTypes.ARMOR_STAND);
     worldLocation.spawnEntity(engine);
     shipRider = (Boat) worldLocation.createEntity(EntityTypes.BOAT);
+    shipRider.offer(Keys.INVULNERABLE, true);
     worldLocation.spawnEntity(shipRider);
     shipHolder = (ArmorStand) worldLocation.createEntity(EntityTypes.ARMOR_STAND);
     worldLocation.spawnEntity(shipHolder);
@@ -67,20 +69,17 @@ public class Airship implements Runnable {
   public void ride(UserPlayer userPlayer) {
     Player player = userPlayer.getPlayer();
     shipRider.addPassenger(player);
-    this.player = player;
+    this.player = userPlayer;
     future = scheduler.scheduleAtFixedRate(this, 0,125, TimeUnit.MILLISECONDS);
   }
-
-
 
   /** Remove the airship */
   public void cleanUp() {
     System.out.println("Cleaning up the air ship");
     // player is still on board
     if (shipRider.getPassengers().size() > 1) {
-      eject(player);
+      eject(this.player.getPlayer());
     }
-    Sponge.getEventManager().unregisterListeners(this);
     entites().forEach(Entity::remove);
     future.cancel(false);
   }
@@ -100,10 +99,27 @@ public class Airship implements Runnable {
 
   @Override
   public void run() {
+    if (System.currentTimeMillis() > maxTime) {
+      System.out.println("Max time remove air ships");
+      cleanUp();
+      return;
+    }
     // todo figure this out so the ships can remove them selves
-    Vector3d looking = new Vector3d(Math.cos(YAW), 0,  Math.sin(YAW));
+    Vector3d shipLocation = engine.getLocation().getPosition();
+    double dX = shipLocation.getX() - stopLocation.getX();
+    double dZ = shipLocation.getZ() - stopLocation.getZ();
+    double yaw = Math.toDegrees(Math.atan2(dZ, dX)) + 90;
+    //System.out.println(yaw);
+    double dY = shipLocation.getY() - stopLocation.getY();
+    //double pitch = Math.toDegrees(Math.atan2(Math.sqrt(dZ * dZ + dX * dX), dY));
+    //System.out.println(pitch);
+    Vector3d looking = new Vector3d(Math.cos(yaw), 0.05,  Math.sin(yaw)).normalize();
+    shipRider.setRotation(new Vector3d(0, yaw, 0));
     engine.setVelocity(looking);
-    if (engine.getLocation().getPosition().distance(stopLocation) < 5) {
+    Vector3d shipCurrentLocation = engine.getLocation().getPosition().mul(1, 0, 1);
+    double distance = shipCurrentLocation.distance(stopLocation.mul(1, 0, 1));
+    //System.out.println(distance);
+    if (distance <= 50) { // tod figure out why distance is not proper
       System.out.println("Near the stop location running clean up");
       cleanUp();
     }
@@ -139,6 +155,12 @@ public class Airship implements Runnable {
       }
       if (player.getVelocity().getZ() < maxFlightVelocity) {
         player.setVelocity(new Vector3d(player.getVelocity().getX(), player.getVelocity().getY(), maxFlightVelocity));
+      }
+    } else {
+      if (player.isOnGround()) {
+        System.out.println("Player has touched the ground");
+        Sponge.getEventManager().unregisterListeners(this);
+        this.player.startFighting();
       }
     }
   }
