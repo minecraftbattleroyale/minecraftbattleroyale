@@ -131,6 +131,9 @@ public class Airship implements Runnable {
     if (this.player == null || !this.player.equals(player)) {
       return; // do nothing for this player as its not the rider
     }
+    player.offer(Keys.CAN_FLY, true);
+    player.offer(Keys.IS_FLYING, true);
+    player.setLocation(player.getLocation().sub(0, 2, 0));
     CarriedInventory inventory = player.getInventory();
     inventory.clear();
     player.setChestplate(ItemStack.of(ItemTypes.ELYTRA, 1));

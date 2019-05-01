@@ -17,8 +17,6 @@ import org.spongepowered.api.entity.living.player.CooldownTracker;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.EventManager;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
-import org.spongepowered.api.event.entity.DamageEntityEvent;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.game.state.GameLoadCompleteEvent;
 import org.spongepowered.api.event.item.inventory.InteractItemEvent;

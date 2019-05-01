@@ -41,7 +41,7 @@ public class UserPlayer {
 
   /** This will start the player in lobby mode */
   public void joinLobby() {
-    //sendResourcePack();
+    sendResourcePack();
     player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
     player.offer(Keys.CAN_FLY, true);
     player.offer(Keys.HEALTH, 20.0);
@@ -63,6 +63,7 @@ public class UserPlayer {
   public void startFighting() {
     if (mode == UserPlayerMode.START_GAME) {
       mode = UserPlayerMode.IN_GAME;
+      player.offer(Keys.CAN_FLY, false);
       CarriedInventory inventory = player.getInventory();
       inventory.clear();
       inventory.offer(ItemStack.of(ItemTypes.IRON_PICKAXE, 1));
