@@ -114,7 +114,7 @@ public class MinecraftBattleRoyale {
   public void onRightClick(InteractItemEvent event, @First Player player) {
     ItemType item = event.getItemStack().getType();
     //event.getItemStack()
-    System.out.println(item);
+    //System.out.println(item);
     // Use iron axe right now
     CooldownTracker cooldownTracker = player.getCooldownTracker();
     boolean pistol = item.matches(ItemStack.of(ItemTypes.IRON_AXE));

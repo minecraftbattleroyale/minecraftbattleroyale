@@ -38,6 +38,7 @@ public class Airship implements Runnable {
   private SpongeExecutorService.SpongeFuture future;
   private long started = System.currentTimeMillis();
   private long maxTime = started + (60 * 1000);
+  public boolean hasDropped = false;
 
   public Airship(Vector3d stopLocation) {
     this.stopLocation = stopLocation;
@@ -94,6 +95,7 @@ public class Airship implements Runnable {
       CarriedInventory inventoryA = player.getInventory();
       inventoryA.clear();
       player.setChestplate(ItemStack.of(ItemTypes.ELYTRA, 1));
+      hasDropped = true;
     };
   }
 
@@ -160,7 +162,7 @@ public class Airship implements Runnable {
         player.setVelocity(new Vector3d(player.getVelocity().getX(), player.getVelocity().getY(), maxFlightVelocity));
       }
     } else {
-      if (player.isOnGround()) {
+      if (player.isOnGround() && hasDropped) {
         System.out.println("Player has touched the ground");
         Sponge.getEventManager().unregisterListeners(this);
         this.player.startFighting();
