@@ -36,7 +36,7 @@ public class StartCommand implements CommandExecutor {
     final MinecraftBattleRoyale plugin = MinecraftBattleRoyale.get();
     final Player player = (Player) src;
     player.sendMessage(Text.of(RED, "Starting the game"));
-    plugin.getCurrentGame().startGame();
+    plugin.getCurrentGame().startGameCountdown();
 
     return CommandResult.builder().build();
   }

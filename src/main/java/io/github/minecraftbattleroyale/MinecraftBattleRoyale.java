@@ -3,8 +3,11 @@ package io.github.minecraftbattleroyale;
 import com.flowpowered.math.vector.Vector3d;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import io.github.minecraftbattleroyale.commands.CollapseCommand;
 import io.github.minecraftbattleroyale.commands.StartCommand;
+import io.github.minecraftbattleroyale.commands.WinnerCommand;
 import io.github.minecraftbattleroyale.core.ArenaGame;
+import io.github.minecraftbattleroyale.core.GameMode;
 import org.spongepowered.api.Game;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.data.key.Keys;
@@ -17,7 +20,12 @@ import org.spongepowered.api.entity.living.player.CooldownTracker;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.EventManager;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.cause.entity.damage.DamageTypes;
+import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
+import org.spongepowered.api.event.entity.DamageEntityEvent;
+import org.spongepowered.api.event.filter.Getter;
 import org.spongepowered.api.event.filter.cause.First;
+import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.game.state.GameLoadCompleteEvent;
 import org.spongepowered.api.event.item.inventory.InteractItemEvent;
 import org.spongepowered.api.event.world.LoadWorldEvent;
@@ -72,8 +80,15 @@ public class MinecraftBattleRoyale {
   public void onStart(GameLoadCompleteEvent event) {
     scheduler = Sponge.getScheduler().createSyncExecutor(this);
     StartCommand.register(this);
+    CollapseCommand.register(this);
+    WinnerCommand.register(this);
     Sponge.getEventManager().registerListeners(this, arenaGame);
     getCurrentGame().setScheduler(scheduler);
+  }
+
+  @Listener
+  public void onFall(DamageEntityEvent event, @Root DamageSource source, @Getter("getTargetEntity") Player subject) {
+    event.setCancelled(source.getType().equals(DamageTypes.FALL) || this.arenaGame.getGameMode() == GameMode.LOBBY);
   }
 
   /** Set the world for the game when it loads */

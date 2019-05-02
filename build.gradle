@@ -20,6 +20,7 @@ repositories {
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     compile 'net.year4000.utilities:core:master-SNAPSHOT'
+    compile 'net.year4000.utilities:core-minecraft:master-SNAPSHOT'
     compile 'net.year4000.utilities:sponge:master-SNAPSHOT'
     compile 'org.spongepowered:spongeapi:7.1.0-SNAPSHOT'
     compile 'com.google.inject:guice:4.0'
