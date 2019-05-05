@@ -67,7 +67,7 @@ public class MinecraftBattleRoyale {
   public final Map<ItemType, Gun> guns = new HashMap<>();
   {
     guns.put(ItemTypes.IRON_AXE, new Gun(ItemTypes.IRON_AXE, "Pistol", 6, 1000, 5, 5));
-    guns.put(ItemTypes.IRON_PICKAXE, new Gun(ItemTypes.IRON_PICKAXE, "Sniper", 18, 3000, 25, 20));
+    guns.put(ItemTypes.IRON_PICKAXE, new Gun(ItemTypes.IRON_PICKAXE, "Sniper", 18, 3000, 25, 10));
     guns.put(ItemTypes.STONE_SWORD, new Gun(ItemTypes.STONE_SWORD, "Shotgun", 4, 2000, 40, 8));
   }
   public final Set<Vector3i> lootStashes = new HashSet<>();

@@ -25,7 +25,7 @@ public class CollapseClock extends Clocker {
     public int round;
     private static final int MAX_ROUNDS = 5;
     private static int[] diamaters = new int[] {800, 500 , 300, 100, 50, 0};
-    private static int[] closing = new int[] {240, 210, 180, 120, 60};
+    private static int[] closing = new int[] {175, 150, 120, 60, 30};
     private long showCollapse;
 
     public CollapseClock(MinecraftBattleRoyale plugin) {
@@ -85,7 +85,7 @@ public class CollapseClock extends Clocker {
         if (position > showCollapse) {
             game.getPlayers().stream().map(UserPlayer::getPlayer).forEach(player -> {
                 player.clearTitle();
-                player.sendTitle(Title.builder().subtitle(Text.EMPTY).title(Text.EMPTY).actionBar(Text.of(TextColors.RED, TextStyles.BOLD, "Circle is collapsing...")).build());
+                player.sendTitle(Title.builder().subtitle(Text.EMPTY).title(Text.EMPTY).actionBar(Text.of(TextColors.RED, TextStyles.BOLD, "Square is collapsing...")).build());
             });
         }
     }

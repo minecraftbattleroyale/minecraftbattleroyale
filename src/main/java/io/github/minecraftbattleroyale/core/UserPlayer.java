@@ -11,6 +11,8 @@ import org.spongepowered.api.boss.BossBarOverlays;
 import org.spongepowered.api.boss.ServerBossBar;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.type.HandTypes;
+import org.spongepowered.api.effect.potion.PotionEffect;
+import org.spongepowered.api.effect.potion.PotionEffectTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.item.ItemTypes;
@@ -25,6 +27,7 @@ import org.spongepowered.api.text.title.Title;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.stream.Collectors;
 
@@ -95,6 +98,7 @@ public class UserPlayer {
       CarriedInventory inventory = player.getInventory();
       inventory.clear();
       player.offer(Keys.EXPERIENCE_LEVEL, game.alivePlayers());
+      player.offer(Keys.POTION_EFFECTS, Arrays.asList(PotionEffect.of(PotionEffectTypes.NIGHT_VISION, 1, 999999)));
 //      inventory.offer(ItemStack.of(ItemTypes.IRON_PICKAXE, 1));
 //      inventory.offer(ItemStack.of(ItemTypes.IRON_AXE, 1));
 //      inventory.offer(ItemStack.of(ItemTypes.STONE_SWORD, 1));
