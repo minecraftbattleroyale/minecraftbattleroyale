@@ -211,7 +211,7 @@ public class ArenaGame {
     if (playingPlayers == 1) {
       for (UserPlayer userPlayer1 : game.getPlayers()) {
         if (userPlayer1.getMode() == UserPlayerMode.IN_GAME || userPlayer1.getMode() == UserPlayerMode.START_GAME) {
-          //game.declareWinner(userPlayer1);
+          game.declareWinner(userPlayer1);
           return;
         }
       }
