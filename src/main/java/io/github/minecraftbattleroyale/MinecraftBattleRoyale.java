@@ -24,7 +24,6 @@ import org.spongepowered.api.entity.living.player.CooldownTracker;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.EventManager;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.cause.entity.damage.DamageTypes;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
@@ -33,7 +32,6 @@ import org.spongepowered.api.event.filter.Getter;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.game.state.GameLoadCompleteEvent;
-import org.spongepowered.api.event.item.inventory.ClickInventoryEvent;
 import org.spongepowered.api.event.item.inventory.InteractItemEvent;
 import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.event.world.chunk.UnloadChunkEvent;
@@ -41,6 +39,7 @@ import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.Inventory;
 import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.item.inventory.query.QueryOperationTypes;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.scheduler.SpongeExecutorService;
 import org.spongepowered.api.text.Text;
@@ -80,29 +79,24 @@ public class MinecraftBattleRoyale {
     lootTable.add(ItemStack.of(ItemTypes.ACACIA_BOAT, 1));
     // armor
     lootTable.add(ItemStack.of(ItemTypes.LEATHER_CHESTPLATE, 1));
-    lootTable.add(ItemStack.of(ItemTypes.IRON_CHESTPLATE, 1));
-    lootTable.add(ItemStack.of(ItemTypes.GOLDEN_CHESTPLATE, 1));
     lootTable.add(ItemStack.of(ItemTypes.DIAMOND_CHESTPLATE, 1));
     lootTable.add(ItemStack.of(ItemTypes.LEATHER_HELMET, 1));
-    lootTable.add(ItemStack.of(ItemTypes.IRON_HELMET, 1));
     lootTable.add(ItemStack.of(ItemTypes.GOLDEN_HELMET, 1));
     lootTable.add(ItemStack.of(ItemTypes.DIAMOND_HELMET, 1));
     lootTable.add(ItemStack.of(ItemTypes.LEATHER_LEGGINGS, 1));
-    lootTable.add(ItemStack.of(ItemTypes.IRON_LEGGINGS, 1));
     lootTable.add(ItemStack.of(ItemTypes.GOLDEN_LEGGINGS, 1));
-    lootTable.add(ItemStack.of(ItemTypes.DIAMOND_LEGGINGS, 1));
+    lootTable.add(ItemStack.of(ItemTypes.IRON_LEGGINGS, 1));
     lootTable.add(ItemStack.of(ItemTypes.LEATHER_BOOTS, 1));
-    lootTable.add(ItemStack.of(ItemTypes.IRON_BOOTS, 1));
     lootTable.add(ItemStack.of(ItemTypes.GOLDEN_BOOTS, 1));
-    lootTable.add(ItemStack.of(ItemTypes.DIAMOND_BOOTS, 1));
     // food
-    lootTable.add(ItemStack.of(ItemTypes.COOKED_FISH, 4));
-    lootTable.add(ItemStack.of(ItemTypes.APPLE, 4));
     lootTable.add(ItemStack.of(ItemTypes.GOLDEN_CARROT, 4));
     lootTable.add(ItemStack.of(ItemTypes.GOLDEN_APPLE, 4));
     // ammo
     ItemStack itemStack = ItemStack.of(ItemTypes.FEATHER, 16);
     itemStack.offer(Keys.DISPLAY_NAME, Text.of(TextColors.GOLD, "Ammo"));
+    lootTable.add(itemStack);
+    lootTable.add(itemStack);
+    lootTable.add(itemStack);
     lootTable.add(itemStack);
   }
 
@@ -177,17 +171,19 @@ public class MinecraftBattleRoyale {
     //event.getItemStack()
     //System.out.println(item);
     // Use iron axe right now
+    ItemStack ammo = ItemStack.of(ItemTypes.FEATHER);
+    ammo.offer(Keys.DISPLAY_NAME, Text.of(TextColors.GOLD, "Ammo"));
     CooldownTracker cooldownTracker = player.getCooldownTracker();
     if ((guns.containsKey(item)) && !cooldownTracker.hasCooldown(item)) {
       Gun gun = guns.get(item);
-      int ammoCount = 100;
+      int ammoCount = player.getInventory().query(QueryOperationTypes.ITEM_STACK_IGNORE_QUANTITY.of(ammo)).totalItems();
       int quantity = event.getItemStack().getQuantity();
-      if (quantity > 1) {
+      if (quantity >= 1 || event.getItemStack().getQuantity() >= 1) {
         Vector3d position = player.getPosition().add(0, 1.5, 0);
         double yaw = Math.toRadians(player.getHeadRotation().getY() + 90);
         double pitch = Math.toRadians(player.getHeadRotation().getX() + 90);
-        Vector3d velocity = new Vector3d(Math.cos(yaw), Math.cos(pitch), Math.sin(yaw)).mul(5);
-        position = position.add(velocity.normalize().mul(gun.damage));
+        Vector3d velocity = new Vector3d(Math.cos(yaw), Math.cos(pitch), Math.sin(yaw)).mul(gun.damage);
+        position = position.add(velocity.normalize().mul(1.5));
         Entity arrow = player.getWorld().createEntity(EntityTypes.TIPPED_ARROW, position);
         player.getWorld().spawnEntity(arrow);
         arrow.setCreator(player.getUniqueId());
@@ -212,7 +208,7 @@ public class MinecraftBattleRoyale {
             future.cancel(true);
             itemStack.offer(Keys.ITEM_DURABILITY, maxStackSize);
             itemStack.setQuantity(gun.ammo);
-            //player.getInventory().
+            player.getInventory().query(QueryOperationTypes.ITEM_STACK_IGNORE_QUANTITY.of(ammo)).poll(gun.ammo);
           }, gun.reloadTime, TimeUnit.MILLISECONDS);
         });
       } else if (quantity == 1) {
@@ -274,7 +270,7 @@ public class MinecraftBattleRoyale {
           TileEntityCarrier tileEntityCarrier = (TileEntityCarrier) titleEntity;
           // todo randomize the loot amount and items
           Random rand = new Random();
-          int ammount = rand.nextInt(8) + 3;
+          int ammount = rand.nextInt(8) + 4;
           Iterator<Inventory> slots = tileEntityCarrier.getInventory().slots().iterator();
           for (int i = 0 ; i < ammount ; i++) {
             ItemStack itemStack = lootTable.get(rand.nextInt(lootTable.size()));

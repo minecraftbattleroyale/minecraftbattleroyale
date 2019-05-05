@@ -65,6 +65,9 @@ public class UserPlayer {
     slots.next().set(mcbr.guns.get(ItemTypes.IRON_PICKAXE).createItem());
     slots.next().set(mcbr.guns.get(ItemTypes.IRON_AXE).createItem());
     slots.next().set(mcbr.guns.get(ItemTypes.STONE_SWORD).createItem());
+    ItemStack ammo = ItemStack.of(ItemTypes.FEATHER, 64);
+    ammo.offer(Keys.DISPLAY_NAME, Text.of(TextColors.GOLD, "Ammo"));
+    slots.next().set(ammo);
     // todo broken atm
 //    ItemStack map = ItemStack.of(ItemTypes.FILLED_MAP, 1);
 //    player.setItemInHand(HandTypes.OFF_HAND, map);

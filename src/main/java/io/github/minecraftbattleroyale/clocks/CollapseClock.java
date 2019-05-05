@@ -1,6 +1,5 @@
 package io.github.minecraftbattleroyale.clocks;
 
-import com.flowpowered.math.vector.Vector3d;
 import io.github.minecraftbattleroyale.MinecraftBattleRoyale;
 import io.github.minecraftbattleroyale.core.ArenaGame;
 import io.github.minecraftbattleroyale.core.GameMode;
@@ -10,14 +9,11 @@ import org.spongepowered.api.boss.BossBarColors;
 import org.spongepowered.api.boss.BossBarOverlays;
 import org.spongepowered.api.boss.ServerBossBar;
 import org.spongepowered.api.effect.sound.SoundTypes;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.EventContext;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.format.TextStyles;
 import org.spongepowered.api.text.title.Title;
 import org.spongepowered.api.world.WorldBorder;
-import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -26,9 +22,10 @@ public class CollapseClock extends Clocker {
     private MinecraftBattleRoyale plugin;
     private ArenaGame game;
     private ServerBossBar bossBar;
-    private int round;
+    public int round;
     private static final int MAX_ROUNDS = 5;
-    private int[] diamaters = new int[] {800, 500 , 300, 100, 50, 0};
+    private static int[] diamaters = new int[] {800, 500 , 300, 100, 50, 0};
+    private static int[] closing = new int[] {240, 210, 180, 120, 60};
     private long showCollapse;
 
     public CollapseClock(MinecraftBattleRoyale plugin) {
@@ -36,7 +33,7 @@ public class CollapseClock extends Clocker {
     }
 
     public CollapseClock(MinecraftBattleRoyale plugin, int round) {
-        super(1, TimeUnit.MINUTES);
+        super(closing[round - 1], TimeUnit.SECONDS);
         this.plugin = plugin;
         this.game = plugin.getCurrentGame();
         this.round = round;
