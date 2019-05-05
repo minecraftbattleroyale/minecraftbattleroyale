@@ -15,7 +15,9 @@ import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.EventContext;
+import org.spongepowered.api.event.entity.DestructEntityEvent;
 import org.spongepowered.api.event.entity.living.humanoid.player.RespawnPlayerEvent;
+import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
@@ -86,6 +88,15 @@ public class ArenaGame {
     return this.gameMode;
   }
 
+  public World getWorld() {
+    return this.world;
+  }
+
+  /** Get the number of alive players */
+  public int alivePlayers() {
+    return (int) getPlayers().stream().filter(UserPlayer::isAlive).count();
+  }
+
   /** Have the player join the game, have them then join the lobby */
   public void leaveGame(Player player) {
     UserPlayer userPlayer = getPlayer(player);
@@ -101,6 +112,7 @@ public class ArenaGame {
 
   /** Declare the winner of the match */
   public void declareWinner(UserPlayer winnerPlayer) {
+    System.out.println("declating winner: " + winnerPlayer);
     gameMode = GameMode.ENDDED;
     getPlayers().stream().map(UserPlayer::getPlayer).forEach(player -> {
       // convert players to spectators
@@ -150,10 +162,42 @@ public class ArenaGame {
     event.setToTransform(new Transform<>(world, COLLAPSE_CENTER.add(0, 100, 0)));
   }
 
+  @Listener
+  public void onDeath(DestructEntityEvent.Death event, @First Player player) {
+    ArenaGame game = MinecraftBattleRoyale.get().getCurrentGame();
+    UserPlayer userPlayer = game.getPlayer(player);
+    // set the player stats after they have died
+    System.out.println("Player has died: " + userPlayer);
+    // todo create chest of items
+    userPlayer.death();
+    int playingPlayers  = 0;
+    for (UserPlayer userPlayer1 : game.getPlayers()) {
+      player.offer(Keys.EXPERIENCE_LEVEL, game.alivePlayers());
+      if (userPlayer1.getMode() == UserPlayerMode.IN_GAME || userPlayer1.getMode() == UserPlayerMode.START_GAME) {
+        playingPlayers++;
+      }
+    }
+    // when finding if the game should end use this right now.
+    if (playingPlayers == 1) {
+      for (UserPlayer userPlayer1 : game.getPlayers()) {
+        if (userPlayer1.getMode() == UserPlayerMode.IN_GAME || userPlayer1.getMode() == UserPlayerMode.START_GAME) {
+          game.declareWinner(userPlayer1);
+          return;
+        }
+      }
+    }
+    event.setCancelled(true);
+  }
+
   /** Disable item drops */
   @Listener
   public void onDropItems(DropItemEvent.Pre event) {
-    event.getDroppedItems().clear();
+    if (gameMode != GameMode.RUNNING) {
+      event.getDroppedItems().clear();
+    } else {
+      // remove dropped guns... may be BUGGY
+      event.getDroppedItems().removeIf(itemStackSnapshot -> MinecraftBattleRoyale.get().guns.containsKey(itemStackSnapshot.getType()));
+    }
   }
 
   @Listener

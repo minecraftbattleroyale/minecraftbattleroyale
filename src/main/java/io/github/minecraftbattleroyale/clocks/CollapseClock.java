@@ -3,6 +3,7 @@ package io.github.minecraftbattleroyale.clocks;
 import com.flowpowered.math.vector.Vector3d;
 import io.github.minecraftbattleroyale.MinecraftBattleRoyale;
 import io.github.minecraftbattleroyale.core.ArenaGame;
+import io.github.minecraftbattleroyale.core.GameMode;
 import io.github.minecraftbattleroyale.core.UserPlayer;
 import net.year4000.utilities.TimeUtil;
 import org.spongepowered.api.boss.BossBarColors;
@@ -16,6 +17,7 @@ import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.format.TextStyles;
 import org.spongepowered.api.text.title.Title;
 import org.spongepowered.api.world.WorldBorder;
+import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -42,18 +44,20 @@ public class CollapseClock extends Clocker {
 
     @Override
     public void runFirst(long position) {
+        if (game.getGameMode() == GameMode.ENDDED) {
+            this.clock.task.cancel(false);
+            return;
+        }
         game.getPlayers().stream().map(UserPlayer::getPlayer).forEach(player -> {
-            player.playSound(SoundTypes.ENTITY_ENDERDRAGON_GROWL, player.getPosition(), 1);
-            WorldBorder border = WorldBorder.builder()
-                    .center(ArenaGame.COLLAPSE_CENTER.getX(), ArenaGame.COLLAPSE_CENTER.getZ())
-                    .diameter(diamaters[round - 1])
-                    .damageAmount(1)
-                    .damageThreshold(0)
-                    .build();
-            player.setWorldBorder(border, Cause.of(EventContext.builder().build(), MinecraftBattleRoyale.get()));
-            player.getWorldBorder().ifPresent(worldBorder -> {
-                worldBorder.setDiameter(diamaters[round], timeUnit.toMillis(time));
-            });
+            player.playSound(SoundTypes.ENTITY_ENDERDRAGON_GROWL, player.getPosition(), 0.5);
+            WorldBorder worldBorder = game.getWorld().getWorldBorder();
+            worldBorder.setCenter(ArenaGame.COLLAPSE_CENTER.getX(), ArenaGame.COLLAPSE_CENTER.getZ());
+            worldBorder.setDamageAmount(round * 0.0125);
+            worldBorder.setDamageThreshold(0);
+            worldBorder.setWarningDistance(0);
+            worldBorder.setWarningTime(0);
+            worldBorder.setDiameter(diamaters[round - 1]);
+            worldBorder.setDiameter(diamaters[round], timeUnit.toMillis(time));
             player.sendTitle(Title.builder()
                     .title(Text.of(TextColors.AQUA, "Round " + round))
                     .subtitle(Text.of(TextColors.DARK_AQUA, "Started    "))
@@ -74,6 +78,11 @@ public class CollapseClock extends Clocker {
 
     @Override
     public void runTock(long position) {
+        if (game.getGameMode() == GameMode.ENDDED) {
+            bossBar.setVisible(false);
+            this.clock.task.cancel(false);
+            return;
+        }
         bossBar.setName(Text.of(TextColors.RED, "Round ", TextColors.DARK_RED, round, TextColors.RED, " - ", TextColors.DARK_PURPLE, new TimeUtil(getTime() - position, TimeUnit.MILLISECONDS).prettyOutput()));
         bossBar.setPercent(position / getTime());
         if (position > showCollapse) {

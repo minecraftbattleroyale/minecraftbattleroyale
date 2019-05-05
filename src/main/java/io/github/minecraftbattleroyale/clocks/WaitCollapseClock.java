@@ -2,6 +2,7 @@ package io.github.minecraftbattleroyale.clocks;
 
 import io.github.minecraftbattleroyale.MinecraftBattleRoyale;
 import io.github.minecraftbattleroyale.core.ArenaGame;
+import io.github.minecraftbattleroyale.core.GameMode;
 import io.github.minecraftbattleroyale.core.UserPlayer;
 import net.year4000.utilities.TimeUtil;
 import org.spongepowered.api.boss.BossBarColors;
@@ -32,6 +33,10 @@ public class WaitCollapseClock extends Clocker {
 
     @Override
     public void runFirst(long position) {
+        if (game.getGameMode() == GameMode.ENDDED) {
+            this.clock.task.cancel(false);
+            return;
+        }
         bossBar = ServerBossBar.builder()
                 .name(Text.of(TextColors.RED, "Next Round: "))
                 .percent(0)
@@ -44,6 +49,11 @@ public class WaitCollapseClock extends Clocker {
 
     @Override
     public void runTock(long position) {
+        if (game.getGameMode() == GameMode.ENDDED) {
+            this.clock.task.cancel(false);
+            bossBar.setVisible(false);
+            return;
+        }
         bossBar.setName(Text.of(TextColors.RED, "Next Round - ", TextColors.DARK_PURPLE, new TimeUtil(getTime() - position, TimeUnit.MILLISECONDS).prettyOutput()));
         bossBar.setPercent(position / getTime());
     }

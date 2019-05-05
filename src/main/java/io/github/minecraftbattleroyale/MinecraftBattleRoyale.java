@@ -1,6 +1,7 @@
 package io.github.minecraftbattleroyale;
 
 import com.flowpowered.math.vector.Vector3d;
+import com.flowpowered.math.vector.Vector3i;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import io.github.minecraftbattleroyale.commands.CollapseCommand;
@@ -10,6 +11,9 @@ import io.github.minecraftbattleroyale.core.ArenaGame;
 import io.github.minecraftbattleroyale.core.GameMode;
 import org.spongepowered.api.Game;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.block.BlockSnapshot;
+import org.spongepowered.api.block.tileentity.TileEntity;
+import org.spongepowered.api.block.tileentity.carrier.TileEntityCarrier;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.effect.particle.ParticleEffect;
@@ -20,6 +24,7 @@ import org.spongepowered.api.entity.living.player.CooldownTracker;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.EventManager;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.cause.entity.damage.DamageTypes;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.entity.DamageEntityEvent;
@@ -35,14 +40,15 @@ import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.scheduler.SpongeExecutorService;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.gamerule.DefaultGameRules;
 import org.spongepowered.api.world.storage.WorldProperties;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Plugin(id = MinecraftBattleRoyale.ID, name = "Minecraft Battle Royale")
@@ -56,9 +62,26 @@ public class MinecraftBattleRoyale {
   private Game game;
   private SpongeExecutorService scheduler;
   private ArenaGame arenaGame = new ArenaGame();
-  private final Map<ItemType, Gun> guns = new HashMap<>();
+  public final Map<ItemType, Gun> guns = new HashMap<>();
   {
-    // todo create the map of the guns
+    guns.put(ItemTypes.IRON_AXE, new Gun(ItemTypes.IRON_AXE, "Pistol", 6, 1000, 5, 10));
+    guns.put(ItemTypes.IRON_PICKAXE, new Gun(ItemTypes.IRON_PICKAXE, "Sniper", 18, 3000, 25, 30));
+    guns.put(ItemTypes.STONE_SWORD, new Gun(ItemTypes.STONE_SWORD, "Shotgun", 4, 2000, 40, 15));
+  }
+  public final Set<Vector3i> lootStashes = new HashSet<>();
+  public final List<ItemStack> lootTable = new ArrayList<>();
+  {
+    lootTable.add(guns.get(ItemTypes.IRON_PICKAXE).createItem());
+    lootTable.add(guns.get(ItemTypes.IRON_AXE).createItem());
+    lootTable.add(guns.get(ItemTypes.STONE_SWORD).createItem());
+    lootTable.add(ItemStack.of(ItemTypes.BOAT, 1));
+    lootTable.add(ItemStack.of(ItemTypes.COOKED_FISH, 4));
+    lootTable.add(ItemStack.of(ItemTypes.APPLE, 4));
+    lootTable.add(ItemStack.of(ItemTypes.GOLDEN_APPLE, 4));
+    lootTable.add(ItemStack.of(ItemTypes.GOLDEN_APPLE, 4));
+    ItemStack itemStack = ItemStack.of(ItemTypes.FEATHER, 16);
+    itemStack.offer(Keys.DISPLAY_NAME, Text.of(TextColors.GOLD, "Ammo"));
+    lootTable.add(itemStack);
   }
 
   /** Get the instance of the plugin */
@@ -132,10 +155,8 @@ public class MinecraftBattleRoyale {
     //System.out.println(item);
     // Use iron axe right now
     CooldownTracker cooldownTracker = player.getCooldownTracker();
-    boolean pistol = item.matches(ItemStack.of(ItemTypes.IRON_AXE));
-    boolean sniper = item.matches(ItemStack.of(ItemTypes.IRON_PICKAXE));
-    boolean shotgun = item.matches(ItemStack.of(ItemTypes.STONE_SWORD));
-    if ((pistol || sniper || shotgun) && !cooldownTracker.hasCooldown(item)) {
+    if ((guns.containsKey(item)) && !cooldownTracker.hasCooldown(item)) {
+      Gun gun = guns.get(item);
       int quantity = event.getItemStack().getQuantity();
       Vector3d position = player.getPosition().add(0, 1.5, 0);
       double yaw = Math.toRadians(player.getHeadRotation().getY() + 90);
@@ -152,23 +173,46 @@ public class MinecraftBattleRoyale {
       }
       // if at one, reload gun
       if (quantity == 1) {
-        cooldownTracker.setCooldown(item, 50);
+        cooldownTracker.setCooldown(item, (int) (gun.reloadTime / 1000) * 20);
         player.getItemInHand(HandTypes.MAIN_HAND).ifPresent(itemStack -> {
+          itemStack.offer(Keys.DISPLAY_NAME, Text.of(TextColors.GOLD, gun.name));
           int maxStackSize = itemStack.get(Keys.ITEM_DURABILITY).get();
           itemStack.offer(Keys.ITEM_DURABILITY, 1);
           long startTime = System.currentTimeMillis();
           SpongeExecutorService.SpongeFuture future = scheduler.scheduleAtFixedRate(() -> {
-            itemStack.offer(Keys.ITEM_DURABILITY, (int) (maxStackSize * ((double) System.currentTimeMillis() - startTime) / 2500));
+            itemStack.offer(Keys.ITEM_DURABILITY, (int) (maxStackSize * ((double) System.currentTimeMillis() - startTime) / gun.reloadTime));
           }, 0, 5, TimeUnit.MILLISECONDS);
           scheduler.schedule(() -> {
             future.cancel(true);
             itemStack.offer(Keys.ITEM_DURABILITY, maxStackSize);
-            itemStack.setQuantity(28);
-          }, 2500, TimeUnit.MILLISECONDS);
+            itemStack.setQuantity(gun.ammo);
+            //player.getInventory().
+          }, gun.reloadTime, TimeUnit.MILLISECONDS);
         });
       } else {
         player.getItemInHand(HandTypes.MAIN_HAND).ifPresent(itemStack -> itemStack.setQuantity(quantity - 1));
-        cooldownTracker.setCooldown(item, 5);
+        cooldownTracker.setCooldown(item, gun.fireRate);
+      }
+    }
+  }
+
+  @Listener
+  public void onChests(InteractBlockEvent.Secondary event) {
+    BlockSnapshot block = event.getTargetBlock();
+    Vector3i location = block.getPosition();
+    System.out.println("right click block");
+    if (!lootStashes.contains(location)) {
+      if (block.getLocation().get().getTileEntity().isPresent()) {
+        TileEntity titleEntity = block.getLocation().get().getTileEntity().get();
+        System.out.println(titleEntity);
+        if (titleEntity instanceof TileEntityCarrier) {
+          TileEntityCarrier tileEntityCarrier = (TileEntityCarrier) titleEntity;
+          // todo randomize the loot amount and items
+          for (ItemStack item : lootTable) {
+            tileEntityCarrier.getInventory().offer(item);
+          }
+          lootStashes.add(location);
+        }
       }
     }
   }
