@@ -66,9 +66,9 @@ public class MinecraftBattleRoyale {
   private ArenaGame arenaGame = new ArenaGame();
   public final Map<ItemType, Gun> guns = new HashMap<>();
   {
-    guns.put(ItemTypes.IRON_AXE, new Gun(ItemTypes.IRON_AXE, "Pistol", 6, 1000, 5, 10));
-    guns.put(ItemTypes.IRON_PICKAXE, new Gun(ItemTypes.IRON_PICKAXE, "Sniper", 18, 3000, 25, 30));
-    guns.put(ItemTypes.STONE_SWORD, new Gun(ItemTypes.STONE_SWORD, "Shotgun", 4, 2000, 40, 15));
+    guns.put(ItemTypes.IRON_AXE, new Gun(ItemTypes.IRON_AXE, "Pistol", 6, 1000, 5, 5));
+    guns.put(ItemTypes.IRON_PICKAXE, new Gun(ItemTypes.IRON_PICKAXE, "Sniper", 18, 3000, 25, 20));
+    guns.put(ItemTypes.STONE_SWORD, new Gun(ItemTypes.STONE_SWORD, "Shotgun", 4, 2000, 40, 8));
   }
   public final Set<Vector3i> lootStashes = new HashSet<>();
   public final List<ItemStack> lootTable = new ArrayList<>();
@@ -194,7 +194,7 @@ public class MinecraftBattleRoyale {
         }
       }
       // if at one, reload gun
-      if (quantity == 1 && ammoCount >= gun.ammo) {
+      if (quantity == 1 && ammoCount > 0) {
         cooldownTracker.setCooldown(item, (int) (gun.reloadTime / 1000) * 20);
         player.getItemInHand(HandTypes.MAIN_HAND).ifPresent(itemStack -> {
           itemStack.offer(Keys.DISPLAY_NAME, Text.of(TextColors.GOLD, gun.name));
@@ -207,7 +207,7 @@ public class MinecraftBattleRoyale {
           scheduler.schedule(() -> {
             future.cancel(true);
             itemStack.offer(Keys.ITEM_DURABILITY, maxStackSize);
-            itemStack.setQuantity(gun.ammo);
+            itemStack.setQuantity(ammoCount < gun.ammo ? ammoCount : gun.ammo);
             player.getInventory().query(QueryOperationTypes.ITEM_STACK_IGNORE_QUANTITY.of(ammo)).poll(gun.ammo);
           }, gun.reloadTime, TimeUnit.MILLISECONDS);
         });

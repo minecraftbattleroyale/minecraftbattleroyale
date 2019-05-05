@@ -12,6 +12,9 @@ import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.block.tileentity.TileEntity;
 import org.spongepowered.api.block.tileentity.carrier.TileEntityCarrier;
+import org.spongepowered.api.boss.BossBarColors;
+import org.spongepowered.api.boss.BossBarOverlays;
+import org.spongepowered.api.boss.ServerBossBar;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.effect.sound.SoundTypes;
 import org.spongepowered.api.entity.Transform;
@@ -78,6 +81,14 @@ public class ArenaGame {
     //Sponge.getEventManager().registerListeners(MinecraftBattleRoyale.get(), userPlayer);
     player.setLocationSafely(new Location<>(world, COLLAPSE_CENTER.add(0, 100, 0)));
     player.offer(Keys.GAME_MODE, GameModes.SPECTATOR);
+    ServerBossBar bossBar = ServerBossBar.builder()
+            .name(Text.of(TextColors.GOLD, "Spectator Mode"))
+            .percent(1)
+            .color(BossBarColors.WHITE)
+            .overlay(BossBarOverlays.PROGRESS)
+            .build();
+    bossBar.addPlayer(player);
+    bossBar.setVisible(true);
   }
 
   /** Get the player from the array list O(n) bad */
@@ -247,6 +258,11 @@ public class ArenaGame {
 
   @Listener
   public void onInteract(ClickInventoryEvent.Secondary event) {
+    event.setCancelled(MinecraftBattleRoyale.get().guns.containsKey(event.getCursorTransaction().getOriginal().getType()));
+  }
+
+  @Listener
+  public void onInteract(ClickInventoryEvent.Drag event) {
     event.setCancelled(MinecraftBattleRoyale.get().guns.containsKey(event.getCursorTransaction().getOriginal().getType()));
   }
 
