@@ -1,12 +1,17 @@
 package io.github.minecraftbattleroyale.core;
 
 import com.flowpowered.math.vector.Vector3d;
+import com.flowpowered.math.vector.Vector3i;
 import io.github.minecraftbattleroyale.Airship;
 import io.github.minecraftbattleroyale.MinecraftBattleRoyale;
 import io.github.minecraftbattleroyale.clocks.CollapseClock;
 import io.github.minecraftbattleroyale.clocks.StartGameClock;
 import net.year4000.utilities.TimeUtil;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.block.tileentity.TileEntity;
+import org.spongepowered.api.block.tileentity.carrier.TileEntityCarrier;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.effect.sound.SoundTypes;
 import org.spongepowered.api.entity.Transform;
@@ -19,8 +24,13 @@ import org.spongepowered.api.event.entity.DestructEntityEvent;
 import org.spongepowered.api.event.entity.living.humanoid.player.RespawnPlayerEvent;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
+import org.spongepowered.api.event.item.inventory.ClickInventoryEvent;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
+import org.spongepowered.api.event.item.inventory.InteractInventoryEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
+import org.spongepowered.api.item.inventory.Inventory;
+import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.scheduler.SpongeExecutorService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
@@ -159,15 +169,35 @@ public class ArenaGame {
 
   @Listener
   public void onRespawn(RespawnPlayerEvent event) {
-    event.setToTransform(new Transform<>(world, COLLAPSE_CENTER.add(0, 100, 0)));
+    event.setToTransform(new Transform<>(world, MinecraftBattleRoyale.get().getCurrentGame().getPlayer(event.getOriginalPlayer()).deathLocation));
   }
 
   @Listener
   public void onDeath(DestructEntityEvent.Death event, @First Player player) {
-    ArenaGame game = MinecraftBattleRoyale.get().getCurrentGame();
+    event.setKeepInventory(true);
+    MinecraftBattleRoyale mcbr = MinecraftBattleRoyale.get();
+    ArenaGame game = mcbr.getCurrentGame();
     UserPlayer userPlayer = game.getPlayer(player);
+    userPlayer.deathLocation = player.getPosition();
     // set the player stats after they have died
     System.out.println("Player has died: " + userPlayer);
+    System.out.println(player.getInventory());
+    Vector3i position = player.getPosition().toInt();
+    player.getWorld().setBlock(position, BlockState.builder().blockType(BlockTypes.CHEST).build());
+    mcbr.lootStashes.add(position);
+    System.out.println("right click block");
+    if (player.getLocation().getTileEntity().isPresent()) {
+      TileEntity titleEntity = player.getLocation().getTileEntity().get();
+      System.out.println(titleEntity);
+      if (titleEntity instanceof TileEntityCarrier) {
+        TileEntityCarrier tileEntityCarrier = (TileEntityCarrier) titleEntity;
+        Iterator<Inventory> slots = tileEntityCarrier.getInventory().slots().iterator();
+
+        for (Inventory inv : player.getInventory().slots()) {
+          inv.poll().ifPresent(item -> slots.next().set(item));
+        }
+      }
+    }
     // todo create chest of items
     userPlayer.death();
     int playingPlayers  = 0;
@@ -181,7 +211,7 @@ public class ArenaGame {
     if (playingPlayers == 1) {
       for (UserPlayer userPlayer1 : game.getPlayers()) {
         if (userPlayer1.getMode() == UserPlayerMode.IN_GAME || userPlayer1.getMode() == UserPlayerMode.START_GAME) {
-          game.declareWinner(userPlayer1);
+          //game.declareWinner(userPlayer1);
           return;
         }
       }
@@ -197,6 +227,7 @@ public class ArenaGame {
     } else {
       // remove dropped guns... may be BUGGY
       event.getDroppedItems().removeIf(itemStackSnapshot -> MinecraftBattleRoyale.get().guns.containsKey(itemStackSnapshot.getType()));
+      System.out.println(event.getDroppedItems());
     }
   }
 
@@ -207,6 +238,16 @@ public class ArenaGame {
     } else {
       joinGame(event.getTargetEntity());
     }
+  }
+
+  @Listener
+  public void onInteract(ClickInventoryEvent event) {
+    event.setCancelled(gameMode == GameMode.LOBBY);
+  }
+
+  @Listener
+  public void onInteract(ClickInventoryEvent.Secondary event) {
+    event.setCancelled(MinecraftBattleRoyale.get().guns.containsKey(event.getCursorTransaction().getOriginal().getType()));
   }
 
   @Listener

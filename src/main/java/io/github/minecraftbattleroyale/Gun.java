@@ -13,9 +13,9 @@ public class Gun {
   public int ammo;
   public long reloadTime;
   public int fireRate;
-  public int damage;
+  public double damage;
 
-  public Gun(ItemType type, String name, int ammo, long reloadTime, int fireRate, int damage) {
+  public Gun(ItemType type, String name, int ammo, long reloadTime, int fireRate, double damage) {
     this.type = type;
     this.name = name;
     this.ammo = ammo;
@@ -31,7 +31,7 @@ public class Gun {
             .quantity(1)
             .build();
     itemStack.offer(Keys.DISPLAY_NAME, Text.of(TextColors.GOLD, name));
-    //itemStack.setQuantity(ammo);
+    itemStack.setQuantity(ammo);
     // gun is not reloaded at start
     return itemStack;
   }

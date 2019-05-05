@@ -1,5 +1,6 @@
 package io.github.minecraftbattleroyale.core;
 
+import com.flowpowered.math.vector.Vector3d;
 import io.github.minecraftbattleroyale.MinecraftBattleRoyale;
 import net.year4000.utilities.Conditions;
 import net.year4000.utilities.sponge.Messages;
@@ -24,6 +25,7 @@ import org.spongepowered.api.text.title.Title;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Iterator;
 import java.util.stream.Collectors;
 
 public class UserPlayer {
@@ -31,6 +33,7 @@ public class UserPlayer {
   private Player player;
   private UserPlayerMode mode = UserPlayerMode.LOBBY;
   private int kills;
+  public Vector3d deathLocation;
 
   public UserPlayer(ArenaGame game, Player player) {
     this.game = Conditions.nonNull(game, "game");
@@ -55,11 +58,13 @@ public class UserPlayer {
     player.offer(Keys.HEALTH, 20.0);
     player.offer(Keys.SATURATION, 20.0);
     player.offer(Keys.FOOD_LEVEL, 20);
-    CarriedInventory inventory = player.getInventory();
     MinecraftBattleRoyale mcbr = MinecraftBattleRoyale.get();
-    inventory.offer(mcbr.guns.get(ItemTypes.IRON_PICKAXE).createItem());
-    inventory.offer(mcbr.guns.get(ItemTypes.IRON_AXE).createItem());
-    inventory.offer(mcbr.guns.get(ItemTypes.STONE_SWORD).createItem());
+    CarriedInventory inventory = player.getInventory();
+    inventory.clear();
+    Iterator<Inventory> slots = inventory.slots().iterator();
+    slots.next().set(mcbr.guns.get(ItemTypes.IRON_PICKAXE).createItem());
+    slots.next().set(mcbr.guns.get(ItemTypes.IRON_AXE).createItem());
+    slots.next().set(mcbr.guns.get(ItemTypes.STONE_SWORD).createItem());
     // todo broken atm
 //    ItemStack map = ItemStack.of(ItemTypes.FILLED_MAP, 1);
 //    player.setItemInHand(HandTypes.OFF_HAND, map);
@@ -87,8 +92,6 @@ public class UserPlayer {
   public void death() {
     if (mode == UserPlayerMode.IN_GAME) {
       mode = UserPlayerMode.DEATH;
-      CarriedInventory inventory = player.getInventory();
-      inventory.clear();
       this.player.offer(Keys.GAME_MODE, GameModes.SPECTATOR);
       ServerBossBar bossBar = ServerBossBar.builder()
               .name(Text.of(TextColors.GOLD, "Spectator Mode"))
@@ -105,6 +108,8 @@ public class UserPlayer {
     mode = UserPlayerMode.START_GAME;
     player.sendMessage(Text.of(TextColors.AQUA, "PRESS F5 TO TOGGLE TO 3RD PERSON MODE."));
     player.offer(Keys.EXPERIENCE_LEVEL, game.alivePlayers());
+    CarriedInventory inventory = player.getInventory();
+    inventory.clear();
   }
 
   public boolean isAlive() {

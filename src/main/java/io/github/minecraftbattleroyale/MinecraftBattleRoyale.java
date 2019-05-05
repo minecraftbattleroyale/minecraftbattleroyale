@@ -24,6 +24,7 @@ import org.spongepowered.api.entity.living.player.CooldownTracker;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.EventManager;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.cause.entity.damage.DamageTypes;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
@@ -32,11 +33,13 @@ import org.spongepowered.api.event.filter.Getter;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.game.state.GameLoadCompleteEvent;
+import org.spongepowered.api.event.item.inventory.ClickInventoryEvent;
 import org.spongepowered.api.event.item.inventory.InteractItemEvent;
 import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.event.world.chunk.UnloadChunkEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
+import org.spongepowered.api.item.inventory.Inventory;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.scheduler.SpongeExecutorService;
@@ -74,11 +77,30 @@ public class MinecraftBattleRoyale {
     lootTable.add(guns.get(ItemTypes.IRON_PICKAXE).createItem());
     lootTable.add(guns.get(ItemTypes.IRON_AXE).createItem());
     lootTable.add(guns.get(ItemTypes.STONE_SWORD).createItem());
-    lootTable.add(ItemStack.of(ItemTypes.BOAT, 1));
+    lootTable.add(ItemStack.of(ItemTypes.ACACIA_BOAT, 1));
+    // armor
+    lootTable.add(ItemStack.of(ItemTypes.LEATHER_CHESTPLATE, 1));
+    lootTable.add(ItemStack.of(ItemTypes.IRON_CHESTPLATE, 1));
+    lootTable.add(ItemStack.of(ItemTypes.GOLDEN_CHESTPLATE, 1));
+    lootTable.add(ItemStack.of(ItemTypes.DIAMOND_CHESTPLATE, 1));
+    lootTable.add(ItemStack.of(ItemTypes.LEATHER_HELMET, 1));
+    lootTable.add(ItemStack.of(ItemTypes.IRON_HELMET, 1));
+    lootTable.add(ItemStack.of(ItemTypes.GOLDEN_HELMET, 1));
+    lootTable.add(ItemStack.of(ItemTypes.DIAMOND_HELMET, 1));
+    lootTable.add(ItemStack.of(ItemTypes.LEATHER_LEGGINGS, 1));
+    lootTable.add(ItemStack.of(ItemTypes.IRON_LEGGINGS, 1));
+    lootTable.add(ItemStack.of(ItemTypes.GOLDEN_LEGGINGS, 1));
+    lootTable.add(ItemStack.of(ItemTypes.DIAMOND_LEGGINGS, 1));
+    lootTable.add(ItemStack.of(ItemTypes.LEATHER_BOOTS, 1));
+    lootTable.add(ItemStack.of(ItemTypes.IRON_BOOTS, 1));
+    lootTable.add(ItemStack.of(ItemTypes.GOLDEN_BOOTS, 1));
+    lootTable.add(ItemStack.of(ItemTypes.DIAMOND_BOOTS, 1));
+    // food
     lootTable.add(ItemStack.of(ItemTypes.COOKED_FISH, 4));
     lootTable.add(ItemStack.of(ItemTypes.APPLE, 4));
+    lootTable.add(ItemStack.of(ItemTypes.GOLDEN_CARROT, 4));
     lootTable.add(ItemStack.of(ItemTypes.GOLDEN_APPLE, 4));
-    lootTable.add(ItemStack.of(ItemTypes.GOLDEN_APPLE, 4));
+    // ammo
     ItemStack itemStack = ItemStack.of(ItemTypes.FEATHER, 16);
     itemStack.offer(Keys.DISPLAY_NAME, Text.of(TextColors.GOLD, "Ammo"));
     lootTable.add(itemStack);
@@ -124,6 +146,7 @@ public class MinecraftBattleRoyale {
       properties.setWorldTime(4283);
       properties.setGameRule(DefaultGameRules.DO_DAYLIGHT_CYCLE, "false");
       properties.setGameRule(DefaultGameRules.DO_MOB_SPAWNING, "false");
+      properties.setGameRule(DefaultGameRules.KEEP_INVENTORY, "true");
       properties.setGameRule(DefaultGameRules.DO_WEATHER_CYCLE, "false");
       properties.setGameRule(DefaultGameRules.SPAWN_RADIUS, "1");
       properties.setSpawnPosition(ArenaGame.LOBBY_SPAWN.toInt());
@@ -157,22 +180,25 @@ public class MinecraftBattleRoyale {
     CooldownTracker cooldownTracker = player.getCooldownTracker();
     if ((guns.containsKey(item)) && !cooldownTracker.hasCooldown(item)) {
       Gun gun = guns.get(item);
+      int ammoCount = 100;
       int quantity = event.getItemStack().getQuantity();
-      Vector3d position = player.getPosition().add(0, 1.5, 0);
-      double yaw = Math.toRadians(player.getHeadRotation().getY() + 90);
-      double pitch = Math.toRadians(player.getHeadRotation().getX() + 90);
-      Vector3d velocity = new Vector3d(Math.cos(yaw), Math.cos(pitch), Math.sin(yaw)).mul(5);
-      position = position.add(velocity.normalize().mul(1.5));
-      Entity arrow = player.getWorld().createEntity(EntityTypes.TIPPED_ARROW, position);
-      player.getWorld().spawnEntity(arrow);
-      arrow.setCreator(player.getUniqueId());
-      arrow.setVelocity(velocity);
-      for (int i = 0 ; i < 10 ; i++) {
-        position = position.add(velocity.normalize());
-        player.getWorld().spawnParticles(ParticleEffect.builder().type(ParticleTypes.SNOWBALL).build(), position);
+      if (quantity > 1) {
+        Vector3d position = player.getPosition().add(0, 1.5, 0);
+        double yaw = Math.toRadians(player.getHeadRotation().getY() + 90);
+        double pitch = Math.toRadians(player.getHeadRotation().getX() + 90);
+        Vector3d velocity = new Vector3d(Math.cos(yaw), Math.cos(pitch), Math.sin(yaw)).mul(5);
+        position = position.add(velocity.normalize().mul(gun.damage));
+        Entity arrow = player.getWorld().createEntity(EntityTypes.TIPPED_ARROW, position);
+        player.getWorld().spawnEntity(arrow);
+        arrow.setCreator(player.getUniqueId());
+        arrow.setVelocity(velocity);
+        for (int i = 0 ; i < 10 ; i++) {
+          position = position.add(velocity.normalize());
+          player.getWorld().spawnParticles(ParticleEffect.builder().type(ParticleTypes.SNOWBALL).build(), position);
+        }
       }
       // if at one, reload gun
-      if (quantity == 1) {
+      if (quantity == 1 && ammoCount >= gun.ammo) {
         cooldownTracker.setCooldown(item, (int) (gun.reloadTime / 1000) * 20);
         player.getItemInHand(HandTypes.MAIN_HAND).ifPresent(itemStack -> {
           itemStack.offer(Keys.DISPLAY_NAME, Text.of(TextColors.GOLD, gun.name));
@@ -189,12 +215,51 @@ public class MinecraftBattleRoyale {
             //player.getInventory().
           }, gun.reloadTime, TimeUnit.MILLISECONDS);
         });
+      } else if (quantity == 1) {
+          player.sendMessage(Text.of(TextColors.DARK_GREEN, "NO AMMO"));
       } else {
         player.getItemInHand(HandTypes.MAIN_HAND).ifPresent(itemStack -> itemStack.setQuantity(quantity - 1));
         cooldownTracker.setCooldown(item, gun.fireRate);
       }
     }
   }
+
+  // todo wrong event
+//  /** Reload the gun... */
+//  @Listener(order = Order.FIRST)
+//  public void onInteract(ClickInventoryEvent.Drop event, @First Player player) {
+//    ItemType item = event.getCursorTransaction().getOriginal().getType();
+//    //event.getItemStack()
+//    System.out.println(item);
+//    // Use iron axe right now
+//    CooldownTracker cooldownTracker = player.getCooldownTracker();
+//    if ((guns.containsKey(item)) && !cooldownTracker.hasCooldown(item)) {
+//      Gun gun = guns.get(item);
+//      int ammoCount = 100;
+//      int quantity = event.getCursorTransaction().getOriginal().getQuantity();
+//      // if at one, reload gun
+//      if (ammoCount >= gun.ammo) {
+//        cooldownTracker.setCooldown(item, (int) (gun.reloadTime / 1000) * 20);
+//        player.getItemInHand(HandTypes.MAIN_HAND).ifPresent(itemStack -> {
+//          itemStack.offer(Keys.DISPLAY_NAME, Text.of(TextColors.GOLD, gun.name));
+//          int maxStackSize = itemStack.get(Keys.ITEM_DURABILITY).get();
+//          itemStack.offer(Keys.ITEM_DURABILITY, 1);
+//          long startTime = System.currentTimeMillis();
+//          SpongeExecutorService.SpongeFuture future = scheduler.scheduleAtFixedRate(() -> {
+//            itemStack.offer(Keys.ITEM_DURABILITY, (int) (maxStackSize * ((double) System.currentTimeMillis() - startTime) / gun.reloadTime));
+//          }, 0, 5, TimeUnit.MILLISECONDS);
+//          scheduler.schedule(() -> {
+//            future.cancel(true);
+//            itemStack.offer(Keys.ITEM_DURABILITY, maxStackSize);
+//            itemStack.setQuantity(gun.ammo);
+//            //player.getInventory().
+//          }, gun.reloadTime, TimeUnit.MILLISECONDS);
+//        });
+//      } else if (quantity == 1) {
+//        player.sendMessage(Text.of(TextColors.DARK_GREEN, "NO AMMO"));
+//      }
+//    }
+//  }
 
   @Listener
   public void onChests(InteractBlockEvent.Secondary event) {
@@ -208,8 +273,12 @@ public class MinecraftBattleRoyale {
         if (titleEntity instanceof TileEntityCarrier) {
           TileEntityCarrier tileEntityCarrier = (TileEntityCarrier) titleEntity;
           // todo randomize the loot amount and items
-          for (ItemStack item : lootTable) {
-            tileEntityCarrier.getInventory().offer(item);
+          Random rand = new Random();
+          int ammount = rand.nextInt(8) + 3;
+          Iterator<Inventory> slots = tileEntityCarrier.getInventory().slots().iterator();
+          for (int i = 0 ; i < ammount ; i++) {
+            ItemStack itemStack = lootTable.get(rand.nextInt(lootTable.size()));
+            slots.next().set(itemStack);
           }
           lootStashes.add(location);
         }
