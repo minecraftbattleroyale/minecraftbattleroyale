@@ -57,10 +57,11 @@ public class UserPlayer {
   public void joinLobby() {
     sendResourcePack();
     player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
-    player.offer(Keys.CAN_FLY, true);
+    //player.offer(Keys.CAN_FLY, true);
     player.offer(Keys.HEALTH, 20.0);
     player.offer(Keys.SATURATION, 20.0);
     player.offer(Keys.FOOD_LEVEL, 20);
+    player.offer(Keys.INVULNERABLE, true);
     MinecraftBattleRoyale mcbr = MinecraftBattleRoyale.get();
     CarriedInventory inventory = player.getInventory();
     inventory.clear();
@@ -93,10 +94,13 @@ public class UserPlayer {
 
   public void startFighting() {
     if (mode == UserPlayerMode.START_GAME) {
+      player.offer(Keys.INVULNERABLE, false);
       mode = UserPlayerMode.IN_GAME;
       player.offer(Keys.CAN_FLY, false);
       CarriedInventory inventory = player.getInventory();
       inventory.clear();
+      player.offer(Keys.SATURATION, 20.0);
+      player.offer(Keys.FOOD_LEVEL, 20);
       player.offer(Keys.EXPERIENCE_LEVEL, game.alivePlayers());
       player.offer(Keys.POTION_EFFECTS, Arrays.asList(PotionEffect.of(PotionEffectTypes.NIGHT_VISION, 1, 999999)));
 //      inventory.offer(ItemStack.of(ItemTypes.IRON_PICKAXE, 1));

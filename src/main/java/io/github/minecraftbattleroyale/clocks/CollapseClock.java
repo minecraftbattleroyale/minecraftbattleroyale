@@ -4,10 +4,12 @@ import io.github.minecraftbattleroyale.MinecraftBattleRoyale;
 import io.github.minecraftbattleroyale.core.ArenaGame;
 import io.github.minecraftbattleroyale.core.GameMode;
 import io.github.minecraftbattleroyale.core.UserPlayer;
+import io.github.minecraftbattleroyale.core.UserPlayerMode;
 import net.year4000.utilities.TimeUtil;
 import org.spongepowered.api.boss.BossBarColors;
 import org.spongepowered.api.boss.BossBarOverlays;
 import org.spongepowered.api.boss.ServerBossBar;
+import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.effect.sound.SoundTypes;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
@@ -25,7 +27,7 @@ public class CollapseClock extends Clocker {
     public int round;
     private static final int MAX_ROUNDS = 5;
     private static int[] diamaters = new int[] {800, 500 , 300, 100, 50, 0};
-    private static int[] closing = new int[] {175, 150, 120, 60, 30};
+    private static int[] closing = new int[] {120, 60, 30, 15, 5};
     private long showCollapse;
 
     public CollapseClock(MinecraftBattleRoyale plugin) {
@@ -87,6 +89,9 @@ public class CollapseClock extends Clocker {
                 player.clearTitle();
                 player.sendTitle(Title.builder().subtitle(Text.EMPTY).title(Text.EMPTY).actionBar(Text.of(TextColors.RED, TextStyles.BOLD, "Square is collapsing...")).build());
             });
+        }
+        for (UserPlayer userPlayer1 : game.getPlayers()) {
+            userPlayer1.getPlayer().offer(Keys.EXPERIENCE_LEVEL, game.alivePlayers());
         }
     }
 

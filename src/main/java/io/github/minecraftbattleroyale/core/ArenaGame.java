@@ -227,7 +227,7 @@ public class ArenaGame {
         }
       }
     }
-    event.setCancelled(true);
+   // event.setCancelled(true);
   }
 
   /** Disable item drops */

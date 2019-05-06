@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class WaitCollapseClock extends Clocker {
-    private static int[] waiting = new int[] {150, 60, 30, 15, 5};
+    private static int[] waiting = new int[] {60, 30, 15, 15, 5};
     private MinecraftBattleRoyale plugin;
     private ArenaGame game;
     private ServerBossBar bossBar;
