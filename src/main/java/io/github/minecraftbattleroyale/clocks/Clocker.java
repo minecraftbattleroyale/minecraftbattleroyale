@@ -17,7 +17,7 @@ public abstract class Clocker {
 
     public SpongeExecutorService.SpongeFuture run(SpongeExecutorService scheduler) {
         clock = new Clock(time, timeUnit);
-        clock.task = scheduler.scheduleAtFixedRate(clock, 0, 250, TimeUnit.MILLISECONDS); // run 20 times a second
+        clock.task = scheduler.scheduleAtFixedRate(clock, 0, 100, TimeUnit.MILLISECONDS); // run 20 times a second
         return clock.task;
     }
 
@@ -43,8 +43,8 @@ public abstract class Clocker {
     public class Clock implements Runnable {
         public SpongeExecutorService.SpongeFuture task;
 
-        private long started = System.currentTimeMillis();
-        private long endded;
+        public long started = System.currentTimeMillis();
+        public long endded;
         private boolean hasStarted = false;
 
         protected Clock(long elapse, TimeUnit unit) {

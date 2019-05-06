@@ -83,7 +83,7 @@ public class CollapseClock extends Clocker {
             return;
         }
         bossBar.setName(Text.of(TextColors.RED, "Round ", TextColors.DARK_RED, round, TextColors.RED, " - ", TextColors.DARK_PURPLE, new TimeUtil(getTime() - position, TimeUnit.MILLISECONDS).prettyOutput()));
-        bossBar.setPercent(((getTime() - position) / (float)1000.0) / (float)100.0);
+        bossBar.setPercent((((getTime() - position) / 1000) / (float) this.time));
         if (position > showCollapse) {
             game.getPlayers().stream().map(UserPlayer::getPlayer).forEach(player -> {
                 player.clearTitle();

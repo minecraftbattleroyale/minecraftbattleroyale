@@ -116,7 +116,7 @@ public class Airship implements Runnable {
     //double pitch = Math.toDegrees(Math.atan2(Math.sqrt(dZ * dZ + dX * dX), dY));
     //System.out.println(pitch);
     Vector3d looking = new Vector3d(Math.cos(yaw), 0.05,  Math.sin(yaw)).normalize();
-    shipRider.setRotation(new Vector3d(0, yaw, 0));
+    //shipRider.setRotation(new Vector3d(0, yaw, 0));
     engine.setVelocity(looking);
     Vector3d shipCurrentLocation = engine.getLocation().getPosition().mul(1, 0, 1);
     double distance = shipCurrentLocation.distance(stopLocation.mul(1, 0, 1));

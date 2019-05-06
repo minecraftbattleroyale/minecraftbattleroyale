@@ -288,7 +288,7 @@ public class ArenaGame {
   @Listener
   public void onJoin(ClientConnectionEvent.Disconnect event) {
     leaveGame(event.getTargetEntity());
-    if (gameMode != GameMode.LOBBY && Sponge.getServer().getOnlinePlayers().size() == 0) {
+    if (gameMode != GameMode.LOBBY && Sponge.getServer().getOnlinePlayers().size() == 1) {
       System.out.println("No players left stopping the server");
       Sponge.getServer().shutdown();
     }
