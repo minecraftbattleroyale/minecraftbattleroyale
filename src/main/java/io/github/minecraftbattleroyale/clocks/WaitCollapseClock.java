@@ -8,6 +8,7 @@ import net.year4000.utilities.TimeUtil;
 import org.spongepowered.api.boss.BossBarColors;
 import org.spongepowered.api.boss.BossBarOverlays;
 import org.spongepowered.api.boss.ServerBossBar;
+import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 
@@ -53,6 +54,9 @@ public class WaitCollapseClock extends Clocker {
         }
         bossBar.setName(Text.of(TextColors.RED, "Next Round - ", TextColors.DARK_PURPLE, new TimeUtil(getTime() - position, TimeUnit.MILLISECONDS).prettyOutput()));
         bossBar.setPercent(position / getTime());
+        for (UserPlayer userPlayer1 : game.getPlayers()) {
+            userPlayer1.getPlayer().offer(Keys.EXPERIENCE_LEVEL, game.alivePlayers());
+        }
     }
 
     @Override

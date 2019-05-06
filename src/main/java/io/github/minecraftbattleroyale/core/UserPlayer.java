@@ -95,6 +95,7 @@ public class UserPlayer {
   public void startFighting() {
     if (mode == UserPlayerMode.START_GAME) {
       player.offer(Keys.INVULNERABLE, false);
+      player.offer(Keys.CUSTOM_NAME_VISIBLE, false);
       mode = UserPlayerMode.IN_GAME;
       player.offer(Keys.CAN_FLY, false);
       CarriedInventory inventory = player.getInventory();

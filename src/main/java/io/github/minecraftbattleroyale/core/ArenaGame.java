@@ -35,6 +35,10 @@ import org.spongepowered.api.item.inventory.Inventory;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.scheduler.SpongeExecutorService;
+import org.spongepowered.api.scoreboard.Scoreboard;
+import org.spongepowered.api.scoreboard.Team;
+import org.spongepowered.api.scoreboard.Visibilities;
+import org.spongepowered.api.scoreboard.Visibility;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.title.Title;
@@ -44,6 +48,7 @@ import org.spongepowered.api.world.WorldBorder;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class ArenaGame {
   public static final Vector3d LOBBY_SPAWN = new Vector3d(181, 60, 448);
@@ -160,7 +165,16 @@ public class ArenaGame {
     }
     gameMode = GameMode.RUNNING;
     Random rand = new Random();
+    Sponge.getServer().getServerScoreboard().get().registerTeam(Team.builder()
+            .name("mcbr")
+            .members(players.stream()
+                    .map(userPlayer -> Text.of(userPlayer.getPlayer().getName()))
+                    .collect(Collectors.toSet()))
+            .nameTagVisibility(Visibilities.NEVER)
+            .allowFriendlyFire(true)
+            .build());
     players.forEach(userPlayer -> {
+      userPlayer.getPlayer().setScoreboard(Sponge.getServer().getServerScoreboard().get());
       Location<World> start = new Location<>(userPlayer.getPlayer().getWorld(), AIRSHIP_START.add(rand.nextInt(10), 0, rand.nextInt(10)));
       userPlayer.getPlayer().setLocation(start);
       Airship airship = new Airship(AIRSHIP_STOP);
@@ -168,7 +182,7 @@ public class ArenaGame {
       airship.ride(userPlayer);
       Sponge.getEventManager().registerListeners(MinecraftBattleRoyale.get(), airship);
       userPlayer.startGame();
-      userPlayer.getPlayer().sendMessage(Text.of(TextColors.GREEN, "Circle is collapsing in " + COLLAPSE_START + "..."));
+      userPlayer.getPlayer().sendMessage(Text.of(TextColors.GREEN, "Square is collapsing in " + COLLAPSE_START + "..."));
     });
     scheduler.schedule(this::startCollapse, COLLAPSE_START, TimeUnit.SECONDS);
   }
@@ -203,13 +217,18 @@ public class ArenaGame {
       if (titleEntity instanceof TileEntityCarrier) {
         TileEntityCarrier tileEntityCarrier = (TileEntityCarrier) titleEntity;
         Iterator<Inventory> slots = tileEntityCarrier.getInventory().slots().iterator();
-
         for (Inventory inv : player.getInventory().slots()) {
-          inv.poll().ifPresent(item -> slots.next().set(item));
+          if (inv != null) {
+            inv.poll().ifPresent(item -> {
+              Inventory slotInv = slots.next();
+              if (slotInv != null) {
+                slotInv.set(item);
+              }
+            });
+          }
         }
       }
     }
-    // todo create chest of items
     userPlayer.death();
     int playingPlayers  = 0;
     for (UserPlayer userPlayer1 : game.getPlayers()) {
@@ -269,6 +288,10 @@ public class ArenaGame {
   @Listener
   public void onJoin(ClientConnectionEvent.Disconnect event) {
     leaveGame(event.getTargetEntity());
+    if (gameMode != GameMode.LOBBY && Sponge.getServer().getOnlinePlayers().size() == 0) {
+      System.out.println("No players left stopping the server");
+      Sponge.getServer().shutdown();
+    }
   }
 }
 
