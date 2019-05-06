@@ -53,7 +53,7 @@ public class WaitCollapseClock extends Clocker {
             return;
         }
         bossBar.setName(Text.of(TextColors.RED, "Next Round - ", TextColors.DARK_PURPLE, new TimeUtil(getTime() - position, TimeUnit.MILLISECONDS).prettyOutput()));
-        bossBar.setPercent(position / getTime());
+        bossBar.setPercent(((getTime() - position) / (float)1000.0) / (float)100.0);
         for (UserPlayer userPlayer1 : game.getPlayers()) {
             userPlayer1.getPlayer().offer(Keys.EXPERIENCE_LEVEL, game.alivePlayers());
         }
