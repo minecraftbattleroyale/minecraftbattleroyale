@@ -27,7 +27,7 @@ public class CollapseClock extends Clocker {
     public int round;
     private static final int MAX_ROUNDS = 5;
     private static int[] diamaters = new int[] {800, 500 , 300, 100, 50, 0};
-    private static int[] closing = new int[] {120, 60, 30, 15, 5};
+    private static int[] closing = new int[] {120, 60, 45, 30, 15};
     private long showCollapse;
 
     public CollapseClock(MinecraftBattleRoyale plugin) {

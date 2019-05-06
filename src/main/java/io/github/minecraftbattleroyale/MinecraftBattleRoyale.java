@@ -178,17 +178,17 @@ public class MinecraftBattleRoyale {
       Gun gun = guns.get(item);
       int ammoCount = player.getInventory().query(QueryOperationTypes.ITEM_STACK_IGNORE_QUANTITY.of(ammo)).totalItems();
       int quantity = event.getItemStack().getQuantity();
-      if (quantity >= 1 || event.getItemStack().getQuantity() >= 1) {
-        Vector3d position = player.getPosition().add(0, 1.5, 0);
+      if (quantity > 1) {
+        Vector3d position = player.getPosition().add(0, 1.8, 0);
         double yaw = Math.toRadians(player.getHeadRotation().getY() + 90);
-        double pitch = Math.toRadians(player.getHeadRotation().getX() + 90);
-        Vector3d velocity = new Vector3d(Math.cos(yaw), Math.cos(pitch), Math.sin(yaw)).mul(gun.damage);
+        double pitch = Math.toRadians(player.getHeadRotation().getX() * -1);
+        Vector3d velocity = new Vector3d(Math.cos(yaw), Math.sin(pitch), Math.sin(yaw)).mul(gun.damage);
         position = position.add(velocity.normalize().mul(1.5));
         Entity arrow = player.getWorld().createEntity(EntityTypes.TIPPED_ARROW, position);
         player.getWorld().spawnEntity(arrow);
         arrow.setCreator(player.getUniqueId());
         arrow.setVelocity(velocity);
-        for (int i = 0 ; i < 10 ; i++) {
+        for (int i = 0 ; i < 15 ; i++) {
           position = position.add(velocity.normalize());
           player.getWorld().spawnParticles(ParticleEffect.builder().type(ParticleTypes.SNOWBALL).build(), position);
         }
