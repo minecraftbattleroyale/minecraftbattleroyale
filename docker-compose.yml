@@ -5,7 +5,7 @@ services:
     build: .
     image: ewized/mcbr:latest
     ports:
-      - 25565:25565
+      - 25566:25565
       - 5005:5005
     volumes:
       - ./build/libs/mcbr-1.0.0-SNAPSHOT-all.jar:/opt/minecraft/mods/mcbr.jar
